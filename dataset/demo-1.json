@@ -1,0 +1,325 @@
+{
+  "scenario_name": "demo-1 (Small & Dense DAG)",
+  "metadata": {
+    "n_tasks": 20,
+    "n_teams": 2,
+    "total_effort_sp": 76,
+    "total_capacity_sp": 60,
+    "total_risk": 112.0,
+    "total_dag_edges": 18
+  },
+  "teams": [
+    {
+      "team_id": "t1",
+      "name": "Team 1 (Core & Backend)",
+      "capacity_sp": 30,
+      "skills": {
+        "SKILL_A01": 0.9,
+        "SKILL_A02": 0.5,
+        "SKILL_A03": 0.5,
+        "SKILL_A04": 0.7,
+        "SKILL_A05": 0.6,
+        "SKILL_A06": 0.4,
+        "SKILL_A07": 0.95,
+        "SKILL_A08": 0.6,
+        "SKILL_A09": 0.5,
+        "SKILL_A10": 0.4
+      }
+    },
+    {
+      "team_id": "t2",
+      "name": "Team 2 (Business & Payment)",
+      "capacity_sp": 30,
+      "skills": {
+        "SKILL_A01": 0.6,
+        "SKILL_A02": 0.8,
+        "SKILL_A03": 0.9,
+        "SKILL_A04": 0.85,
+        "SKILL_A05": 0.5,
+        "SKILL_A06": 0.5,
+        "SKILL_A07": 0.6,
+        "SKILL_A08": 0.8,
+        "SKILL_A09": 0.5,
+        "SKILL_A10": 0.5
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "id": 34916,
+      "title": "java.spring.security.audit.spring-csrf-disabled.spring-csrf-disabled",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-order-service",
+      "r_i": 6.5,
+      "e_i": 2,
+      "skill": "SKILL_A07",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": []
+    },
+    {
+      "id": 35973,
+      "title": "ENTITY_MASS_ASSIGNMENT",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-order-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34916
+      ]
+    },
+    {
+      "id": 46282,
+      "title": "ENTITY_LEAK",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-order-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A09",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34916
+      ]
+    },
+    {
+      "id": 46283,
+      "title": "ENTITY_MASS_ASSIGNMENT",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-order-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34916
+      ]
+    },
+    {
+      "id": 46315,
+      "title": "java:S5122",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-order-service",
+      "r_i": 3.0,
+      "e_i": 2,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 4,
+      "predecessors": [
+        34916
+      ]
+    },
+    {
+      "id": 38449,
+      "title": "ENTITY_MASS_ASSIGNMENT",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-order-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34916
+      ]
+    },
+    {
+      "id": 46424,
+      "title": "ENTITY_MASS_ASSIGNMENT",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-order-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34916
+      ]
+    },
+    {
+      "id": 41819,
+      "title": "ENTITY_MASS_ASSIGNMENT",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-order-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34916
+      ]
+    },
+    {
+      "id": 46684,
+      "title": "ENTITY_MASS_ASSIGNMENT",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-order-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34916
+      ]
+    },
+    {
+      "id": 36798,
+      "title": "ENTITY_MASS_ASSIGNMENT",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-order-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34916
+      ]
+    },
+    {
+      "id": 46275,
+      "title": "ENTITY_LEAK",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-station-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A09",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34926
+      ]
+    },
+    {
+      "id": 39237,
+      "title": "java:S4684",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-station-service",
+      "r_i": 6.0,
+      "e_i": 2,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34926
+      ]
+    },
+    {
+      "id": 39238,
+      "title": "java:S4684",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-station-service",
+      "r_i": 6.0,
+      "e_i": 2,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34926
+      ]
+    },
+    {
+      "id": 39239,
+      "title": "java:S4684",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-station-service",
+      "r_i": 6.0,
+      "e_i": 2,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34926
+      ]
+    },
+    {
+      "id": 34987,
+      "title": "ENTITY_MASS_ASSIGNMENT",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-station-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34926
+      ]
+    },
+    {
+      "id": 39214,
+      "title": "ENTITY_MASS_ASSIGNMENT",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-station-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34926
+      ]
+    },
+    {
+      "id": 34926,
+      "title": "java.spring.security.audit.spring-csrf-disabled.spring-csrf-disabled",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-station-service",
+      "r_i": 6.5,
+      "e_i": 2,
+      "skill": "SKILL_A07",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": []
+    },
+    {
+      "id": 33425,
+      "title": "ENTITY_MASS_ASSIGNMENT",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-station-service",
+      "r_i": 6.0,
+      "e_i": 5,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 3,
+      "predecessors": [
+        34926
+      ]
+    },
+    {
+      "id": 46326,
+      "title": "java:S5122",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-station-service",
+      "r_i": 3.0,
+      "e_i": 2,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 4,
+      "predecessors": [
+        34926
+      ]
+    },
+    {
+      "id": 46328,
+      "title": "java:S5122",
+      "repository": "https://github.com/FudanSELab/train-ticket",
+      "asset_module": "ts-station-service",
+      "r_i": 3.0,
+      "e_i": 2,
+      "skill": "SKILL_A08",
+      "earliest_sprint": 1,
+      "deadline_sprint": 4,
+      "predecessors": [
+        34926
+      ]
+    }
+  ]
+}
