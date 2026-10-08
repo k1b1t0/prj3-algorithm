@@ -1,8 +1,8 @@
 import json
 import sys
 from pathlib import Path
-from prj3_algorithm.models import Task, Team
-from prj3_algorithm.proposed.pipeline import solve_proposed_pipeline
+from models import Task, Team
+from proposed.pipeline import solve_proposed_pipeline
 
 
 def load_scenario(json_path: Path):

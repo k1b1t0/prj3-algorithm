@@ -1,0 +1,65 @@
+{
+  "demo-1.json": {
+    "scenario": "demo-1 (Small & Dense DAG)",
+    "proposed": {
+      "risk_resolved": 88.0,
+      "switch_cost": 0.8,
+      "sms": 0.6969,
+      "dag_violations": 0
+    },
+    "greedy_cvss": {
+      "risk_resolved": 91.0,
+      "switch_cost": 5.0,
+      "sms": 0.7313,
+      "dag_violations": 0
+    },
+    "knapsack_topo": {
+      "risk_resolved": 88.0,
+      "switch_cost": 3.0,
+      "sms": 0.7125,
+      "dag_violations": 0
+    }
+  },
+  "demo-2.json": {
+    "scenario": "demo-2 (Standard Sprint & Trimming)",
+    "proposed": {
+      "risk_resolved": 139.5,
+      "switch_cost": 1.2,
+      "sms": 0.666,
+      "dag_violations": 0
+    },
+    "greedy_cvss": {
+      "risk_resolved": 127.5,
+      "switch_cost": 5.2,
+      "sms": 0.7071,
+      "dag_violations": 0
+    },
+    "knapsack_topo": {
+      "risk_resolved": 145.5,
+      "switch_cost": 5.6,
+      "sms": 0.6635,
+      "dag_violations": 0
+    }
+  },
+  "demo-3.json": {
+    "scenario": "demo-3 (Stress Test & High Contention)",
+    "proposed": {
+      "risk_resolved": 226.5,
+      "switch_cost": 3.2,
+      "sms": 0.7308,
+      "dag_violations": 0
+    },
+    "greedy_cvss": {
+      "risk_resolved": 191.0,
+      "switch_cost": 8.0,
+      "sms": 0.7516,
+      "dag_violations": 0
+    },
+    "knapsack_topo": {
+      "risk_resolved": 198.0,
+      "switch_cost": 12.2,
+      "sms": 0.6914,
+      "dag_violations": 0
+    }
+  }
+}

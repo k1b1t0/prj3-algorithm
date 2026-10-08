@@ -1,8 +1,8 @@
 import numpy as np
 from sklearn.cluster import SpectralClustering
 from typing import List, Dict
-from ..models import Task
-from .affinity import build_affinity_matrix
+from models import Task
+from proposed.affinity import build_affinity_matrix
 
 
 def cluster_tasks(tasks: List[Task], n_clusters: int, random_state: int = 42) -> List[List[Task]]:

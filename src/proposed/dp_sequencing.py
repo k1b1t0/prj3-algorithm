@@ -1,6 +1,6 @@
 from typing import List, Dict, Tuple, Optional
-from ..models import Task
-from ..metrics import compute_context_distance
+from models import Task
+from metrics import compute_context_distance
 
 
 def sequence_tasks_dp(tasks: List[Task]) -> List[Task]:

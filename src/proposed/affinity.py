@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List
-from ..models import Task
-from ..metrics import compute_context_distance
+from models import Task
+from metrics import compute_context_distance
 
 
 def build_affinity_matrix(tasks: List[Task], sigma: float = 0.5, dag_boost: float = 1.0) -> np.ndarray:

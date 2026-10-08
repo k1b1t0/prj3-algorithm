@@ -1,10 +1,10 @@
 from typing import List, Dict
-from ..models import Task, Team, ScheduleResult, SprintPlan
-from ..metrics import evaluate_schedule_switch_cost, evaluate_sprint_plan
-from .clustering import cluster_tasks
-from .assignment import assign_clusters_to_teams
-from .trimmer import trim_cluster_for_team
-from .dp_sequencing import sequence_tasks_dp
+from models import Task, Team, ScheduleResult, SprintPlan
+from metrics import evaluate_schedule_switch_cost, evaluate_sprint_plan
+from proposed.clustering import cluster_tasks
+from proposed.assignment import assign_clusters_to_teams
+from proposed.trimmer import trim_cluster_for_team
+from proposed.dp_sequencing import sequence_tasks_dp
 
 
 def solve_proposed_pipeline(

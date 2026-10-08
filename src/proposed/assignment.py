@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from typing import List, Tuple
-from ..models import Task, Team
+from models import Task, Team
 
 
 def assign_clusters_to_teams(clusters: List[List[Task]], teams: List[Team]) -> List[Tuple[Team, List[Task]]]:

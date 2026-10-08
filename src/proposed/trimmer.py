@@ -1,5 +1,5 @@
 from typing import List, Tuple, Set
-from ..models import Task, Team
+from models import Task, Team
 
 
 def trim_cluster_for_team(

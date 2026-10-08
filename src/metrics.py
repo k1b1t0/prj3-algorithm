@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List, Dict, Tuple
-from .models import Task, Team, ScheduleResult, SprintPlan
+from models import Task, Team, ScheduleResult, SprintPlan
 
 
 def compute_context_distance(task_a: Task, task_b: Task, w_mod: float = 0.6, w_skill: float = 0.4) -> float:
