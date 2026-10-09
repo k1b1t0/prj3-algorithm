@@ -1,6 +1,13 @@
+"""Runner for executing Proposed Algorithm (ESSC + Hungarian + DP) on scenarios."""
+import argparse
 import json
 import sys
 from pathlib import Path
+
+# Add project root and src/ to path so this script can run standalone
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
 from models import Task, Team
 from proposed.pipeline import solve_proposed_pipeline
 
@@ -38,14 +45,24 @@ def load_scenario(json_path: Path):
     return data["scenario_name"], tasks, teams
 
 
-def run_proposed_on_scenarios():
-    base_dir = Path(__file__).resolve().parent
-    dataset_dir = base_dir / "dataset"
+def run_proposed(scenario_files=None, output_path=None):
+    dataset_dir = PROJECT_ROOT / "dataset"
+    outputs_dir = PROJECT_ROOT / "outputs"
+    outputs_dir.mkdir(parents=True, exist_ok=True)
+
+    if scenario_files is None:
+        scenario_files = ["demo-1.json", "demo-2.json", "demo-3.json"]
+    if output_path is None:
+        output_path = outputs_dir / "proposed_results.json"
+    else:
+        output_path = Path(output_path)
+
     results = {}
 
-    for demo_file in ["demo-1.json", "demo-2.json", "demo-3.json"]:
-        file_path = dataset_dir / demo_file
+    for demo_file in scenario_files:
+        file_path = dataset_dir / demo_file if not Path(demo_file).is_absolute() and not Path(demo_file).exists() else Path(demo_file)
         if not file_path.exists():
+            print(f"[Warning] Scenario file not found: {file_path}")
             continue
 
         name, tasks, teams = load_scenario(file_path)
@@ -86,14 +103,22 @@ def run_proposed_on_scenarios():
             print(f"  Team {sch.team_id}: {sch_info['n_tasks']} tasks, Effort: {sch.total_effort} SP, Switch Cost: {sch.context_switch_cost}")
 
         print(f"  Summary: Risk Resolved={plan.total_risk_resolved}, Switch Cost={plan.total_switch_cost}, SMS={plan.skill_match_score}, DAG Violations={plan.dag_violations}\n")
-        results[demo_file] = scenario_res
+        results[file_path.name] = scenario_res
 
-    # Ghi ket qua ra file output json de kiem tra
-    out_file = base_dir / "proposed_results.json"
-    with open(out_file, "w", encoding="utf-8") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    print(f"Results written to: {out_file}")
+    print(f"Proposed results successfully written to: {output_path}")
+    return results
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Run Proposed Scheduling Algorithm")
+    parser.add_argument("--scenarios", nargs="*", default=None, help="Scenario json files to run (default: demo-1.json, demo-2.json, demo-3.json)")
+    parser.add_argument("--output", default=None, help="Path to save output results JSON")
+    args = parser.parse_args()
+
+    run_proposed(scenario_files=args.scenarios, output_path=args.output)
 
 
 if __name__ == "__main__":
-    run_proposed_on_scenarios()
+    main()

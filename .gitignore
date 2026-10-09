@@ -1,5 +1,18 @@
-draft/
+# Python & Environments
 __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
+
+# Draft & Scratch
+draft/
+
+# Generated Outputs & Results (Do not track in git)
+outputs/
+*.html
+*.json
+!dataset/demo-*.json
+!pyproject.toml
+
+# Input Datasets (if keeping only generator in git)
+dataset/*.json
