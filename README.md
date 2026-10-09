@@ -98,36 +98,33 @@
 
 The proposed method was benchmarked against both baselines on all 3 scenarios.
 
-### Scenario 1: `demo-1` ($N=20$ Tasks, $|T|=2$ Teams, Capacity = 60 SP)
+### Scenario 1: `demo-1` (Small & Dense DAG: $N=20$ Tasks, $|T|=2$ Teams)
 
-| Metric | Proposed (ESSC+DP) | Baseline 1 (Greedy-CVSS) | Baseline 2 (Knapsack-Topo) |
-| :--- | :---: | :---: | :---: |
-| **Context Switch ($F_{\text{Switch}} \downarrow$)** | **0.80** | 5.00 | 3.00 |
-| **Risk Resolved ($F_{\text{Risk}} \uparrow$)** | 88.0 | **91.0** | 88.0 |
-| **Skill Match (SMS $\uparrow$)** | 0.697 | **0.731** | 0.713 |
-| **DAG Violations ($= 0$)** | **0** | **0** | **0** |
-
----
-
-### Scenario 2: `demo-2` ($N=40$ Tasks, $|T|=3$ Teams, Capacity = 90 SP)
-
-| Metric | Proposed (ESSC+DP) | Baseline 1 (Greedy-CVSS) | Baseline 2 (Knapsack-Topo) |
-| :--- | :---: | :---: | :---: |
-| **Context Switch ($F_{\text{Switch}} \downarrow$)** | **1.20** | 5.20 | 5.60 |
-| **Risk Resolved ($F_{\text{Risk}} \uparrow$)** | 139.5 | 127.5 | **145.5** |
-| **Skill Match (SMS $\uparrow$)** | 0.666 | **0.707** | 0.663 |
-| **DAG Violations ($= 0$)** | **0** | **0** | **0** |
+| Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | DAG Violations ($=0$) |
+| :--- | :---: | :---: | :---: | :---: |
+| **1. Proposed (ESSC+DP)** | 88.0 | **0.80** | 0.697 | **0** |
+| 2. Greedy CVSS | **91.0** | 5.00 | **0.731** | **0** |
+| 3. Knapsack Topo | 88.0 | 3.00 | 0.713 | **0** |
 
 ---
 
-### Scenario 3: `demo-3` ($N=60$ Tasks, $|T|=4$ Teams, Capacity = 120 SP)
+### Scenario 2: `demo-2` (Standard Sprint & Trimming: $N=40$ Tasks, $|T|=3$ Teams)
 
-| Metric | Proposed (ESSC+DP) | Baseline 1 (Greedy-CVSS) | Baseline 2 (Knapsack-Topo) |
-| :--- | :---: | :---: | :---: |
-| **Context Switch ($F_{\text{Switch}} \downarrow$)** | **3.20** | 8.00 | 12.20 |
-| **Risk Resolved ($F_{\text{Risk}} \uparrow$)** | **226.5** | 191.0 | 198.0 |
-| **Skill Match (SMS $\uparrow$)** | 0.731 | **0.752** | 0.691 |
-| **DAG Violations ($= 0$)** | **0** | **0** | **0** |
+| Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | DAG Violations ($=0$) |
+| :--- | :---: | :---: | :---: | :---: |
+| **1. Proposed (ESSC+DP)** | 139.5 | **1.20** | 0.666 | **0** |
+| 2. Greedy CVSS | 127.5 | 5.20 | **0.707** | **0** |
+| 3. Knapsack Topo | **145.5** | 5.60 | 0.663 | **0** |
+
+---
+
+### Scenario 3: `demo-3` (Stress Test & High Contention: $N=60$ Tasks, $|T|=4$ Teams)
+
+| Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | DAG Violations ($=0$) |
+| :--- | :---: | :---: | :---: | :---: |
+| **1. Proposed (ESSC+DP)** | **226.5** | **3.20** | 0.731 | **0** |
+| 2. Greedy CVSS | 191.0 | 8.00 | **0.752** | **0** |
+| 3. Knapsack Topo | 198.0 | 12.20 | 0.691 | **0** |
 
 ---
 
