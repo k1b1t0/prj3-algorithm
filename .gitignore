@@ -16,4 +16,3 @@ outputs/
 
 # Input Datasets (if keeping only generator in git)
 dataset/*.json
-scripts/
