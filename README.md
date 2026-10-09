@@ -1,87 +1,198 @@
-# prj3-algorithm: Thuật Toán Điều Độ Lỗ Hổng Bảo Mật (1 Sprint)
+# prj3-algorithm
 
 ---
 
-## 1. Kết Quả Thực Nghiệm Đối Chứng (Benchmark Summary)
+## 1. Problem Formulation
 
-Chạy thực nghiệm so sánh phương pháp đề xuất (**Proposed: ESSC+DP**) với 2 giải thuật đối chứng (**Greedy-CVSS** và **Knapsack-Topo**) trên 3 bộ kịch bản:
+### 1.1 Scope & Assumptions
+- Single-Sprint Snapshot
+- $N$ backlog tasks $\mathcal{V} = \{1, \dots, N\}$ with a DAG precedence graph $G = (\mathcal{V}, \mathcal{E})$ must be assigned and sequenced across $|T|$ cross-functional teams.
+- Each task $i \in \mathcal{V}$ has:
+  - Risk score $r_i$ (CVSS severity)
+  - Estimated effort $e_i$ (Story Points - SP)
+  - Required domain skill $\text{skill}_i$
+  - Target microservice module $\text{mod}_i$
+- Each team $t \in T$ has:
+  - Sprint capacity limit $\text{cap}_t$ (SP)
+  - Skill competency matrix $k_{t, s} \in [0, 1]$
 
-| Kịch bản | Quy mô | Chỉ số | Proposed (ESSC+DP) | Baseline 1 (Greedy-CVSS) | Baseline 2 (Knapsack-Topo) | Nhận xét cải tiến |
-| :--- | :--- | :--- | :---: | :---: | :---: | :--- |
-| **demo-1** | $N=20$<br>$\|T\|=2$ | **Switch Cost** ($F_{\text{Switch}}$)<br>Risk Resolved ($F_{\text{Risk}}$)<br>Skill Match (SMS)<br>DAG Violations | **0.80**<br>88.0<br>0.697<br>**0** | 5.00<br>**91.0**<br>0.731<br>**0** | 3.00<br>88.0<br>0.713<br>**0** | **Giảm 73.3%** chi phí chuyển ngữ cảnh so với baseline tốt nhất. |
-| **demo-2** | $N=40$<br>$\|T\|=3$ | **Switch Cost** ($F_{\text{Switch}}$)<br>Risk Resolved ($F_{\text{Risk}}$)<br>Skill Match (SMS)<br>DAG Violations | **1.20**<br>139.5<br>0.666<br>**0** | 5.20<br>127.5<br>0.707<br>**0** | 5.60<br>**145.5**<br>0.663<br>**0** | **Giảm 76.9%** chi phí chuyển ngữ cảnh; giữ vững 0 vi phạm DAG khi cắt tỉa quá tải. |
-| **demo-3** | $N=60$<br>$\|T\|=4$ | **Switch Cost** ($F_{\text{Switch}}$)<br>Risk Resolved ($F_{\text{Risk}}$)<br>Skill Match (SMS)<br>DAG Violations | **3.20**<br>**226.5**<br>0.731<br>**0** | 8.00<br>191.0<br>0.752<br>**0** | 12.20<br>198.0<br>0.691<br>**0** | **Giảm 60.0% - 73.8%** chi phí chuyển ngữ cảnh; **xử lý được nhiều rủi ro hơn** cả 2 baseline. |
+### 1.2 Mathematical Model
+- **Context-Switch Distance between task $i$ and $j$ ($C_{ij}$)**:
+  $$C_{ij} = 0.6 \cdot \mathbb{I}(\text{mod}_i \neq \text{mod}_j) + 0.4 \cdot \mathbb{I}(\text{skill}_i \neq \text{skill}_j) \in [0, 1]$$
+
+- **Multi-Objective Criteria**:
+  1. **Maximize Risk Resolved**: $\max \sum_{i \in \text{Scheduled}} r_i \iff \min \sum_{i \in \text{Deferred}} r_i$
+  2. **Minimize Context-Switch Cost**: $\min F_{\text{Switch}} = \sum_{t \in T} \sum_{k=1}^{|\pi_t|-1} C_{\pi_t(k), \pi_t(k+1)}$
+  3. **Maximize Skill Match Score (SMS)**: $\max \text{SMS} = \frac{1}{|\text{Scheduled}|} \sum_{t \in T} \sum_{i \in \pi_t} k_{t, \text{skill}_i}$
+
+- **Hard Constraints**:
+  1. **Sprint Capacity**: $\sum_{i \in \pi_t} e_i \le \text{cap}_t, \quad \forall t \in T$
+  2. **Competency Threshold**: $k_{t, \text{skill}_i} \ge 0.5, \quad \forall i \in \pi_t$
+  3. **DAG Precedence Integrity**: If $(u, v) \in \mathcal{E}$ and $v \in \pi_t$, then $u \in \text{Scheduled}$ and $u$ must be executed before $v$.
 
 ---
 
-## 2. Hướng Dẫn Vận Hành
+## 2. Experimental Scenarios & Baselines
 
-### Sử dụng CLI chính (`main.py`):
+### 2.1 Benchmark Scenarios
+- **`demo-1`**: $N=20$, $|T|=2$, Capacity $= 60$ SP, Backlog $= 76$ SP.
+- **`demo-2`**: $N=40$, $|T|=3$, Capacity $= 90$ SP, Backlog $= 158$ SP.
+- **`demo-3`**: $N=60$, $|T|=4$, Capacity $= 120$ SP, Backlog $= 238$ SP.
+
+### 2.2 Comparison Baselines
+- **`Greedy-CVSS`**: Sorts tasks descending by CVSS risk ($r_i$); greedily assigns each task to the first eligible team with remaining capacity and $k_{t, s} \ge 0.5$. Execution order follows assignment order.
+- **`Knapsack-Topo`**: 
+  - **Phase 1 (Team Selection)**: Selects tasks per team via greedy Knapsack on benefit-to-cost ratio ($r_i / e_i$) subject to team capacity and $k_{t, s} \ge 0.5$.
+  - **Phase 2 (Sequencing)**: Orders each team's selected tasks using standard Kahn's Topological Sort (without optimizing for context switch $C_{ij}$).
+
+---
+
+## 3. Proposed 4-Phase Algorithm
+
+```text
+       [Backlog Tasks]
+              │
+              ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │ Phase 1: Context Clustering (Spectral Clustering)       │
+  │ • Affinity A_ij = exp(-C_ij^2 / 2σ^2)                   │
+  │ • DAG Affinity Boost: Force A_uv = 1.0 for u -> v       │
+  │ • Partitions tasks into k = |T| cohesive clusters.      │
+  └──────────────────────────┬──────────────────────────────┘
+                             │
+                             ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │ Phase 2: Team Assignment (Hungarian Matching)           │
+  │ • Cost matrix: Cost(t, j) = 1.0 - AvgSkill(t, Cluster_j)│
+  │ • Linear sum assignment solves globally optimal 1-to-1  │
+  │   bipartite matching in O(|T|^3).                       │
+  └──────────────────────────┬──────────────────────────────┘
+                             │
+                             ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │ Phase 3: Capacity Trimming (PCKP Leaf Pruning)          │
+  │ • Prune tasks with skill < 0.5 & cascade orphan children│
+  │ • While sum(e_i) > cap_t: iteratively prune LEAF tasks  │
+  │   (out-degree = 0 in current set) with lowest r_i / e_i.│
+  │ • Guarantees 0 DAG violations mathematically.           │
+  └──────────────────────────┬──────────────────────────────┘
+                             │
+                             ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │ Phase 4: Intra-Team Sequencing (Topological Bitmask DP) │
+  │ • State: dp(mask, last_u) over team's assigned tasks.   │
+  │ • Transition requires (mask & req_mask[v]) == req[v].   │
+  │ • Finds globally minimal context-switch tour in         │
+  │   O(2^L * L^2), taking < 0.005s per team.               │
+  └─────────────────────────────────────────────────────────┘
+```
+
+1. **Phase 1 (Spectral Clustering + DAG Boost)**: Builds affinity using Gaussian RBF $A_{ij} = \exp(-C_{ij}^2 / 2\sigma^2)$. Forces $A_{uv} = 1.0$ for direct dependencies to prevent cross-team blocking.
+2. **Phase 2 (Hungarian Matching)**: Solves globally optimal bipartite matching between teams and task clusters based on average skill compatibility.
+3. **Phase 3 (PCKP Leaf Pruning)**: Eliminates tasks failing skill thresholds, then trims overload by iteratively pruning leaf nodes with lowest $r_i / e_i$. Because only leaves are pruned, DAG integrity is 100% preserved.
+4. **Phase 4 (Topological Bitmask DP)**: Formulates intra-team sequencing as a TSP tour over context distances $C_{ij}$ constrained by topological bitmasks. Guarantees global optimality within milliseconds.
+
+---
+
+## 4. Benchmark Results & Evaluation
+
+The proposed method was benchmarked against both baselines on all 3 scenarios.
+
+### Scenario 1: `demo-1` ($N=20$ Tasks, $|T|=2$ Teams, Capacity = 60 SP)
+
+| Metric | Proposed (ESSC+DP) | Baseline 1 (Greedy-CVSS) | Baseline 2 (Knapsack-Topo) |
+| :--- | :---: | :---: | :---: |
+| **Context Switch ($F_{\text{Switch}} \downarrow$)** | **0.80** | 5.00 | 3.00 |
+| **Risk Resolved ($F_{\text{Risk}} \uparrow$)** | 88.0 | **91.0** | 88.0 |
+| **Skill Match (SMS $\uparrow$)** | 0.697 | **0.731** | 0.713 |
+| **DAG Violations ($= 0$)** | **0** | **0** | **0** |
+
+---
+
+### Scenario 2: `demo-2` ($N=40$ Tasks, $|T|=3$ Teams, Capacity = 90 SP)
+
+| Metric | Proposed (ESSC+DP) | Baseline 1 (Greedy-CVSS) | Baseline 2 (Knapsack-Topo) |
+| :--- | :---: | :---: | :---: |
+| **Context Switch ($F_{\text{Switch}} \downarrow$)** | **1.20** | 5.20 | 5.60 |
+| **Risk Resolved ($F_{\text{Risk}} \uparrow$)** | 139.5 | 127.5 | **145.5** |
+| **Skill Match (SMS $\uparrow$)** | 0.666 | **0.707** | 0.663 |
+| **DAG Violations ($= 0$)** | **0** | **0** | **0** |
+
+---
+
+### Scenario 3: `demo-3` ($N=60$ Tasks, $|T|=4$ Teams, Capacity = 120 SP)
+
+| Metric | Proposed (ESSC+DP) | Baseline 1 (Greedy-CVSS) | Baseline 2 (Knapsack-Topo) |
+| :--- | :---: | :---: | :---: |
+| **Context Switch ($F_{\text{Switch}} \downarrow$)** | **3.20** | 8.00 | 12.20 |
+| **Risk Resolved ($F_{\text{Risk}} \uparrow$)** | **226.5** | 191.0 | 198.0 |
+| **Skill Match (SMS $\uparrow$)** | 0.731 | **0.752** | 0.691 |
+| **DAG Violations ($= 0$)** | **0** | **0** | **0** |
+
+---
+
+## 5. Repository Structure & Quickstart
+
+### 5.1 Project Structure
+```text
+prj3-algorithm/
+├── src/                          # Core Algorithm & Models
+│   ├── models.py                 # Task, Team, Schedule data classes
+│   ├── metrics.py                # Multi-objective metrics evaluation
+│   ├── proposed/                 # Proposed 4-stage pipeline
+│   │   ├── pipeline.py
+│   │   ├── affinity.py
+│   │   ├── clustering.py
+│   │   ├── assignment.py
+│   │   ├── trimmer.py
+│   │   └── dp_sequencing.py
+│   └── baselines/                # Greedy-CVSS & Knapsack-Topo baselines
+├── dataset/                      # Benchmark inputs (demo-1, demo-2, demo-3.json)
+├── outputs/                      # Generated results & HTML dashboards (Git-ignored)
+├── scripts/                      # Standalone execution scripts
+│   ├── run_proposed.py
+│   ├── run_benchmark.py
+│   └── generate_visualizer.py
+├── tests/                        # Unit tests for DP and PCKP trimmer
+├── main.py                       # Unified CLI runner
+├── pyproject.toml
+└── README.md
+```
+
+### 5.2 Installation & Usage
+
+#### Setup Environment
 ```bash
-# Cài đặt môi trường
+# Using uv (recommended)
 uv sync
 
-# Chạy thuật toán đề xuất (lưu kết quả vào outputs/proposed_results.json)
+# Or standard pip
+pip install -e .
+```
+
+#### Running Experiments via Unified CLI
+```bash
+# Run proposed algorithm on demo scenarios
 uv run main.py proposed
 
-# Chạy benchmark so sánh đối chứng (lưu vào outputs/benchmark_summary.json)
+# Run full comparative benchmark vs baselines
 uv run main.py benchmark
 
-# Sinh báo cáo trực quan Dashboard HTML
+# Generate interactive visualizer dashboard
 uv run main.py visualizer
 
-# Chạy trọn gói (Benchmark + Visualizer)
+# All-in-one: Run benchmark and generate HTML visualizer
 uv run main.py all
 ```
 
-### Hoặc chạy trực tiếp từng script riêng biệt trong `scripts/`:
+#### Running Individual Scripts
 ```bash
 uv run scripts/run_proposed.py
 uv run scripts/run_benchmark.py
 uv run scripts/generate_visualizer.py
+```
+
+#### Running Unit Tests
+```bash
 uv run python -m unittest discover tests
 ```
-
----
-
-## 3. Kiến Trúc 4 Giai Đoạn (Proposed Pipeline)
-
-```text
-               [Backlog Tasks (demo-X.json)]
-                             │
-                             ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │ Giai đoạn 1: Gom Cụm Ngữ Cảnh (Spectral Clustering)     │
-  │ - Ma trận khoảng cách C_ij (Module: 0.6, Skill: 0.4).   │
-  │ - DAG Affinity Boost: kéo gần các cặp phụ thuộc u -> v. │
-  └──────────────────────────┬──────────────────────────────┘
-                             │
-                             ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │ Giai đoạn 2: Phân Công Đội Nhóm (Hungarian Matching)    │
-  │ - Tối đa hóa độ tương thích kỹ năng k_{t, skill}        │
-  └──────────────────────────┬──────────────────────────────┘
-                             │
-                             ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │ Giai đoạn 3: Làm Gọn Dung Lượng (PCKP Leaf Pruning)     │
-  │ - Lọc kỹ năng yếu (< 0.5) và tỉa các con mồ côi.        │
-  │ - Tỉa dần các task lá có r_i / e_i thấp nhất            │
-  │   đảm bảo 100% không làm đứt gãy DAG.                   │
-  └──────────────────────────┬──────────────────────────────┘
-                             │
-                             ▼
-  ┌─────────────────────────────────────────────────────────┐
-  │ Giai đoạn 4: Lập Lịch Thứ Tự Nội Bộ (Intra-Team DP)     │
-  │ - Topological Bitmask DP tìm hoán vị tối thiểu          │
-  │   tổng Context Switch Cost trong O(2^L * L) (< 0.02s).   │
-  └──────────────────────────┬──────────────────────────────┘
-```
-
----
-
-## 4. Các Thuật Toán Đối Chứng (Baselines)
-
-- **Baseline 1 (`Greedy-CVSS`)**: Đại diện cho thực tiễn phổ biến trong doanh nghiệp — ưu tiên gán các task có rủi ro $r_i$ cao nhất cho đội nhóm phù hợp còn trống dung lượng. Giữ nguyên thứ tự gán làm chuỗi thực hiện, dẫn đến chi phí chuyển đổi ngữ cảnh ($F_{\text{Switch}}$) rất cao do nhảy module liên tục.
-- **Baseline 2 (`Knapsack-Topo`)**: Tối đa hóa rủi ro bằng Knapsack tham lam theo tỷ số $\frac{r_i}{e_i}$. Sắp xếp thứ tự thực thi bằng thuật toán Kahn Topological Sort cơ bản, hoàn toàn không tối ưu hóa hàm chi phí chuyển đổi ngữ cảnh $C_{ij}$.
-
