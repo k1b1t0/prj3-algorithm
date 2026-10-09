@@ -3,14 +3,13 @@ import argparse
 import sys
 from pathlib import Path
 
-# Ensure src and scripts are importable
+# Ensure src is on sys.path for internal src modules
 PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
-sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
-from run_proposed import run_proposed
-from run_benchmark import run_benchmark
-from generate_visualizer import generate_html
+from scripts.run_proposed import run_proposed
+from scripts.run_benchmark import run_benchmark
+from scripts.generate_visualizer import generate_html
 
 
 def main():
