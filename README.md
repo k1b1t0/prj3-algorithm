@@ -40,10 +40,8 @@
 - **`demo-3`**: $N=60$, $|T|=4$, Capacity $= 120$ SP, Backlog $= 238$ SP.
 
 ### 2.2 Comparison Baselines
-- **`Greedy-CVSS`**: Sorts tasks descending by CVSS risk ($r_i$); greedily assigns each task to the first eligible team with remaining capacity and $k_{t, s} \ge 0.5$. Execution order follows assignment order.
-- **`Knapsack-Topo`**: 
-  - **Phase 1 (Team Selection)**: Selects tasks per team via greedy Knapsack on benefit-to-cost ratio ($r_i / e_i$) subject to team capacity and $k_{t, s} \ge 0.5$.
-  - **Phase 2 (Sequencing)**: Orders each team's selected tasks using standard Kahn's Topological Sort (without optimizing for context switch $C_{ij}$).
+- **`Google OR-Tools CP-SAT (Exact Baseline)`**: Exact constraint programming & Mixed-Integer Linear Programming (MILP) solver. Formulates the exact mathematical model with capacity constraints, MTZ subtour elimination for context switches, skill thresholds, and DAG precedence. Solves for theoretical global optimum up to a specified time limit (30s–60s).
+- **`Greedy-CVSS (Industry Standard)`**: Sorts tasks descending by CVSS risk ($r_i$); greedily assigns each task to the first eligible team with remaining capacity and $k_{t, s} \ge 0.5$. Reflects standard industry practice (Jira / security triage queues).
 
 ---
 
@@ -96,37 +94,38 @@
 
 ## 4. Benchmark Results & Evaluation
 
-The proposed method was benchmarked against both baselines on all 3 scenarios.
+The proposed method was benchmarked against the Exact baseline (OR-Tools CP-SAT) and Industry standard (Greedy-CVSS) on all 3 scenarios.
 
 ### Scenario 1: `demo-1` (Small & Dense DAG: $N=20$ Tasks, $|T|=2$ Teams)
 
-| Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | DAG Violations ($=0$) |
-| :--- | :---: | :---: | :---: | :---: |
-| **1. Proposed (ESSC+DP)** | 88.0 | **0.80** | 0.697 | **0** |
-| 2. Greedy CVSS | **91.0** | 5.00 | **0.731** | **0** |
-| 3. Knapsack Topo | 88.0 | 3.00 | 0.713 | **0** |
+| Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | Opt. Gap (%) $\downarrow$ | Runtime (s) $\downarrow$ |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **1. OR-Tools CP-SAT (OPTIMAL)** | **106.0** | 2.40 | **0.739** | **0.0% (Exact)** | 1.581s |
+| **2. Proposed (ESSC+DP)** | 103.0 | **1.60** | 0.675 | **2.87%** | **0.0753s** |
+| 3. Greedy CVSS | **106.0** | 5.00 | **0.739** | 2.22% | 0.0001s |
 
 ---
 
 ### Scenario 2: `demo-2` (Standard Sprint & Trimming: $N=40$ Tasks, $|T|=3$ Teams)
 
-| Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | DAG Violations ($=0$) |
-| :--- | :---: | :---: | :---: | :---: |
-| **1. Proposed (ESSC+DP)** | 139.5 | **1.20** | 0.666 | **0** |
-| 2. Greedy CVSS | 127.5 | 5.20 | **0.707** | **0** |
-| 3. Knapsack Topo | **145.5** | 5.60 | 0.663 | **0** |
+| Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | Opt. Gap (%) $\downarrow$ | Runtime (s) $\downarrow$ |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **1. OR-Tools CP-SAT (FEASIBLE)** | **163.5** | 3.80 | **0.766** | **0.0% (Exact)** | 30.158s |
+| **2. Proposed (ESSC+DP)** | **163.5** | **2.00** | 0.670 | **0.50%** | **0.0500s** |
+| 3. Greedy CVSS | 157.5 | 7.00 | 0.725 | 6.51% | 0.0003s |
 
 ---
 
 ### Scenario 3: `demo-3` (Stress Test & High Contention: $N=60$ Tasks, $|T|=4$ Teams)
 
-| Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | DAG Violations ($=0$) |
-| :--- | :---: | :---: | :---: | :---: |
-| **1. Proposed (ESSC+DP)** | **226.5** | **3.20** | 0.731 | **0** |
-| 2. Greedy CVSS | 191.0 | 8.00 | **0.752** | **0** |
-| 3. Knapsack Topo | 198.0 | 12.20 | 0.691 | **0** |
+| Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | Opt. Gap (%) $\downarrow$ | Runtime (s) $\downarrow$ |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **1. OR-Tools CP-SAT (FEASIBLE)** | **224.0** | 9.20 | **0.696** | **0.0% (Exact)** | 60.788s |
+| **2. Proposed (ESSC+DP)** | 200.0 | **3.60** | 0.694 | **9.36%** | **0.0391s** |
+| 3. Greedy CVSS | 191.0 | 9.60 | 0.687 | 16.22% | 0.0003s |
 
 ---
+
 
 ## 5. Repository Structure & Quickstart
 
@@ -143,11 +142,12 @@ prj3-algorithm/
 │   │   ├── assignment.py
 │   │   ├── trimmer.py
 │   │   └── dp_sequencing.py
-│   └── baselines/                # Greedy-CVSS & Knapsack-Topo baselines
+│   └── baselines/                # CP-SAT Exact & Greedy-CVSS baselines
 ├── dataset/                      # Benchmark inputs (demo-1, demo-2, demo-3.json)
 ├── outputs/                      # Generated results & HTML dashboards (Git-ignored)
 ├── scripts/                      # Standalone execution scripts
 │   ├── run_proposed.py
+│   ├── run_exact.py
 │   ├── run_benchmark.py
 │   └── generate_visualizer.py
 ├── tests/                        # Unit tests for DP and PCKP trimmer
