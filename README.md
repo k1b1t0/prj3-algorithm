@@ -101,8 +101,8 @@ The proposed method was benchmarked against the Exact baseline (OR-Tools CP-SAT)
 | Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | Opt. Gap (%) $\downarrow$ | Runtime (s) $\downarrow$ |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **1. OR-Tools CP-SAT (OPTIMAL)** | **106.0** | 2.40 | **0.739** | **0.0% (Exact)** | 1.581s |
-| **2. Proposed (ESSC+DP)** | 103.0 | **1.60** | 0.675 | **2.87%** | **0.0753s** |
-| 3. Greedy CVSS | **106.0** | 5.00 | **0.739** | 2.22% | 0.0001s |
+| **2. Proposed (ESSC+DP)** | 103.0 | **1.60** | 0.675 | 2.87% | 0.0753s |
+| 3. Greedy CVSS | **106.0** | 5.00 | 0.739 | 2.22% | **0.0001s** |
 
 ---
 
@@ -111,8 +111,8 @@ The proposed method was benchmarked against the Exact baseline (OR-Tools CP-SAT)
 | Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | Opt. Gap (%) $\downarrow$ | Runtime (s) $\downarrow$ |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **1. OR-Tools CP-SAT (FEASIBLE)** | **163.5** | 3.80 | **0.766** | **0.0% (Exact)** | 30.158s |
-| **2. Proposed (ESSC+DP)** | **163.5** | **2.00** | 0.670 | **0.50%** | **0.0500s** |
-| 3. Greedy CVSS | 157.5 | 7.00 | 0.725 | 6.51% | 0.0003s |
+| **2. Proposed (ESSC+DP)** | **163.5** | **2.00** | 0.670 | 0.50 | 0.0500s |
+| 3. Greedy CVSS | 157.5 | 7.00 | 0.725 | 6.51% | **0.0003s** |
 
 ---
 
@@ -121,8 +121,8 @@ The proposed method was benchmarked against the Exact baseline (OR-Tools CP-SAT)
 | Method | Risk Resolved $\uparrow$ | Switch Cost $\downarrow$ | SMS (0-1) $\uparrow$ | Opt. Gap (%) $\downarrow$ | Runtime (s) $\downarrow$ |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **1. OR-Tools CP-SAT (FEASIBLE)** | **224.0** | 9.20 | **0.696** | **0.0% (Exact)** | 60.788s |
-| **2. Proposed (ESSC+DP)** | 200.0 | **3.60** | 0.694 | **9.36%** | **0.0391s** |
-| 3. Greedy CVSS | 191.0 | 9.60 | 0.687 | 16.22% | 0.0003s |
+| **2. Proposed (ESSC+DP)** | 200.0 | **3.60** | 0.694 | 9.36% | 0.0391s |
+| 3. Greedy CVSS | 191.0 | 9.60 | 0.687 | 16.22% | **0.0003s** |
 
 ---
 
