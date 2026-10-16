@@ -355,16 +355,17 @@ def generate_html():
       </div>
     </div>
 
-    <!-- Knapsack Topo -->
+    <!-- Google OR-Tools CP-SAT -->
     <div class="algo-card">
       <div class="algo-header">
         <div class="algo-title">
-          <span>Knapsack Topo</span>
+          <span>OR-Tools CP-SAT</span>
+          <span style="font-size: 10px; background: #3b82f6; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 700;">EXACT BASELINE</span>
         </div>
       </div>
-      <div class="metrics-summary" id="metrics-knapsack_topo"></div>
+      <div class="metrics-summary" id="metrics-exact"></div>
       <div class="graph-wrapper">
-        <div id="graph-knapsack_topo" class="graph-canvas"></div>
+        <div id="graph-exact" class="graph-canvas"></div>
       </div>
     </div>
   </div>
@@ -619,9 +620,9 @@ def generate_html():
       const scenarioData = benchmarkData[scenarioKey];
       if (!scenarioData) return;
 
+      renderAlgoCard('exact', scenarioData);
       renderAlgoCard('proposed', scenarioData);
       renderAlgoCard('greedy_cvss', scenarioData);
-      renderAlgoCard('knapsack_topo', scenarioData);
     }}
 
     function resetViews() {{
