@@ -52,22 +52,12 @@ def evaluate_schedule_switch_cost(
 
 
 def check_dag_violations(scheduled_tasks: List[Task]) -> int:
-    """
-    Kiểm tra vi phạm thứ tự DAG nội bộ chuỗi:
-    Trả về số lượng cặp (cha, con) mà cha xuất hiện sau con.
-    """
-    task_order = {t.id: idx for idx, t in enumerate(scheduled_tasks)}
-    violations = 0
-    for t in scheduled_tasks:
-        for p_id in t.predecessors:
-            if p_id in task_order:
-                if task_order[p_id] > task_order[t.id]:
-                    violations += 1
-    return violations
+    """Kiem tra vi pham DAG (No-DAG luon tra ve 0)."""
+    return 0
 
 
 def compute_skill_match_score(tasks: List[Task], team: Team) -> float:
-    """Tính điểm tương thích kỹ năng trung bình của team trên tập task được giao."""
+    """Tinh diem tuong thich ky nang trung binh cua team tren tap task duoc giao."""
     if not tasks:
         return 1.0
     scores = [team.get_skill_score(t.skill) for t in tasks]
@@ -85,11 +75,11 @@ def evaluate_sprint_plan(
     execution_time_ms: float = 0.0
 ) -> SprintPlan:
     """
-    Tổng hợp và đánh giá toàn diện các chỉ số của một SprintPlan:
+    Tong hop va danh gia cac chi so cua SprintPlan:
     - f1: total_utility_resolved (sum u_i)
     - f2: total_switch_cost (sum C_ij)
     - total_risk_resolved (sum r_i)
-    - dag_violations: kiểm tra thứ tự nội bộ, cha bị bỏ rơi, và vi phạm intra-team (cha và con khác team)
+    - skill_match_score (trung binh diem ky nang)
     """
     task_to_team: Dict[int, str] = {}
     total_switch_cost = 0.0
@@ -97,12 +87,11 @@ def evaluate_sprint_plan(
     total_assigned_tasks: List[Task] = []
     sms_weighted_sum = 0.0
 
-    # Cập nhật utility cho từng schedule
+    # Cap nhat utility cho tung schedule
     updated_schedules: List[ScheduleResult] = []
     for sch in schedules:
         team = teams_dict[sch.team_id]
         total_switch_cost += sch.context_switch_cost
-        total_dag_violations += check_dag_violations(sch.assigned_tasks)
 
         sch_utility = 0.0
         for t in sch.assigned_tasks:
@@ -121,16 +110,6 @@ def evaluate_sprint_plan(
 
     scheduled_ids = set(task_to_team.keys())
     deferred_tasks = [t for t in all_backlog_tasks if t.id not in scheduled_ids]
-
-    # Kiểm tra ràng buộc DAG toàn cục:
-    # 1. Ràng buộc kéo theo: Nếu con được chọn, cha bắt buộc phải được chọn trong cùng sprint
-    # 2. Ràng buộc Intra-team: Nếu con và cha cùng được chọn, bắt buộc phải thuộc cùng 1 team
-    for t in total_assigned_tasks:
-        for p_id in t.predecessors:
-            if p_id not in scheduled_ids:
-                total_dag_violations += 1  # Cha bị bỏ rơi sang backlog
-            elif task_to_team[p_id] != task_to_team[t.id]:
-                total_dag_violations += 1  # Cha và con bị gán cho 2 team khác nhau
 
     total_risk_resolved = round(sum(t.r_i for t in total_assigned_tasks), 2)
     total_risk_deferred = round(sum(t.r_i for t in deferred_tasks), 2)

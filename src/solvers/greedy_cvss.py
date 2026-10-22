@@ -1,11 +1,7 @@
 """
-Baseline 1: Greedy-CVSS (Industry Standard Practice).
-Mô phỏng quy trình phân bổ thực tế trong các đội Scrum / Jira / CSOC:
-1. Sắp xếp Backlog giảm dần theo rủi ro (hoặc u_i).
-2. Duyệt tuần tự lặp (Multi-pass Topological Queue):
-   - Đảm bảo toàn bộ cha đã được nhận trong cùng sprint.
-   - Tuân thủ ràng buộc Intra-team: Con bắt buộc gán cùng team với cha.
-   - Gán cho team đầu tiên thỏa mãn ngưỡng kỹ năng (>= 0.5) và đủ dung lượng Story Points.
+Baseline 1: Greedy-CVSS / Greedy-Utility.
+1. Sap xep Backlog giam dan theo Mitigation Utility u_i (neu use_utility=True) hoac CVSS r_i.
+2. Duyet tuan tu: gan cho team dau tien dat nguong skill (>= 0.5) va con du Story Points.
 """
 import time
 from typing import List, Dict, Optional
@@ -31,7 +27,7 @@ class GreedyCVSSSolver(BaseSolver):
         skill_thresh = kwargs.get("skill_threshold", self.skill_threshold)
         use_u = kwargs.get("use_utility", self.use_utility)
 
-        # 1. Sắp xếp Backlog giảm dần theo độ ưu tiên
+        # 1. Sap xep backlog theo do uu tien (u_i hoac CVSS r_i)
         if use_u:
             sorted_tasks = sorted(
                 tasks,
@@ -46,7 +42,7 @@ class GreedyCVSSSolver(BaseSolver):
         team_efforts: Dict[str, int] = {tm.team_id: 0 for tm in teams}
         task_to_team: Dict[int, str] = {}
 
-        # 2. Duyệt tuần tự: Gán cho team đầu tiên thỏa mãn kỹ năng và còn đủ dung lượng SP
+        # 2. Duyet tuan tu: gan cho team dau tien thoa man skill va dung luong
         for task in sorted_tasks:
             for tm in teams:
                 rem_cap = tm.capacity_sp - team_efforts[tm.team_id]

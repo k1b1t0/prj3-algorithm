@@ -1,6 +1,5 @@
 """
-BaseSolver Interface for All Solvers in Tier 1.
-Mọi thuật toán (Exact, Greedy, Proposed 4-Phase, NSGA-II) đều kế thừa BaseSolver.
+BaseSolver interface cho cac thuat toan.
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional
@@ -19,8 +18,5 @@ class BaseSolver(ABC):
         current_sprint: int = 4,
         **kwargs
     ) -> SprintPlan:
-        """
-        Nhận vào tập backlog tasks và danh sách teams, trả về một SprintPlan hoàn chỉnh.
-        Thuần túy thuật toán, không chứa code logging, visualize hay CLI.
-        """
+        """Giai bai toan dieu do va tra ve SprintPlan."""
         pass
