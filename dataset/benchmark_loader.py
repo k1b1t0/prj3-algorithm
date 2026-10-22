@@ -145,15 +145,21 @@ def generate_scenario_instance(
         rng.shuffle(modules_shuffled)
 
         selected_raw: List[Dict[str, Any]] = []
+        seen_ids = set()
         for m in modules_shuffled:
             mod_tasks = list(module_groups[m])
             rng.shuffle(mod_tasks)
             take_count = min(len(mod_tasks), max(5, target_tasks // 4))
-            selected_raw.extend(mod_tasks[:take_count])
+            added = 0
+            for t in mod_tasks:
+                if t["id"] not in seen_ids:
+                    seen_ids.add(t["id"])
+                    selected_raw.append(t)
+                    added += 1
+                    if added >= take_count or len(selected_raw) >= target_tasks:
+                        break
             if len(selected_raw) >= target_tasks:
                 break
-
-        selected_raw = selected_raw[:target_tasks]
     else:
         # Fallback tổng hợp nếu không có file gốc
         selected_raw = []

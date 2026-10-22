@@ -13,12 +13,18 @@ def topological_repair(order: List[int], tasks: List[Task]) -> List[int]:
     id_to_task = {t.id: t for t in tasks}
     in_degrees = {t.id: 0 for t in tasks}
     adj = defaultdict(list)
+    has_edges = False
 
     for t in tasks:
         for p in t.predecessors:
             if p in id_to_task:
                 adj[p].append(t.id)
                 in_degrees[t.id] += 1
+                has_edges = True
+
+    # No-DAG fast path: không có ràng buộc thứ tự nào, mọi hoán vị đều hợp lệ
+    if not has_edges:
+        return list(order)
 
     pos_in_order = {tid: idx for idx, tid in enumerate(order)}
     ready = [tid for tid, deg in in_degrees.items() if deg == 0]
@@ -42,12 +48,20 @@ def generate_random_topological_sort(tasks: List[Task], rng: random.Random) -> L
     id_to_task = {t.id: t for t in tasks}
     in_degrees = {t.id: 0 for t in tasks}
     adj = defaultdict(list)
+    has_edges = False
 
     for t in tasks:
         for p in t.predecessors:
             if p in id_to_task:
                 adj[p].append(t.id)
                 in_degrees[t.id] += 1
+                has_edges = True
+
+    # No-DAG fast path: hoán vị ngẫu nhiên toàn bộ task ID
+    if not has_edges:
+        order = [t.id for t in tasks]
+        rng.shuffle(order)
+        return order
 
     ready = [t.id for t in tasks if in_degrees[t.id] == 0]
     order = []
@@ -117,8 +131,11 @@ def order_crossover(
         fill_idx = 0
         for i in range(size):
             if child[i] is None:
-                child[i] = fill_vals[fill_idx]
-                fill_idx += 1
+                if fill_idx < len(fill_vals):
+                    child[i] = fill_vals[fill_idx]
+                    fill_idx += 1
+                else:
+                    child[i] = parent_a[i]
         return child
 
     c1_raw = ox(p1, p2)
