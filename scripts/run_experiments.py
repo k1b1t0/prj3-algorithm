@@ -38,7 +38,7 @@ from dataset.benchmark_loader import generate_scenario_instance
 SCENARIO_CONFIGS = {
     "small_40": {"n_tasks": 40, "n_teams": 2, "time_limit": 15.0, "ref_point": (0.0, 15.0)},
     "medium_100": {"n_tasks": 100, "n_teams": 4, "time_limit": 30.0, "ref_point": (0.0, 30.0)},
-    "large_500": {"n_tasks": 500, "n_teams": 8, "time_limit": 60.0, "ref_point": (0.0, 60.0)},
+    "large_500": {"n_tasks": 500, "n_teams": 8, "time_limit": 25.0, "ref_point": (0.0, 60.0)},
 }
 
 

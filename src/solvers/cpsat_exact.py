@@ -187,7 +187,21 @@ class CPSATExactSolver(BaseSolver):
         status = solver.Solve(model)
         status_name = solver.StatusName(status)
 
-        # 7. Trích xuất nghiệm
+        # 7. Trích xuất nghiệm (chỉ khi tìm thấy nghiệm khả thi hoặc tối ưu)
+        if status not in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
+            exec_time_ms = round((time.perf_counter() - t0) * 1000, 2)
+            empty_schedules = [
+                ScheduleResult(team_id=tm.team_id, assigned_tasks=[], total_effort=0, context_switch_cost=0.0)
+                for tm in teams
+            ]
+            plan = evaluate_sprint_plan(tasks, empty_schedules, teams_dict, current_sprint=current_sprint)
+            plan.solver_name = f"{self.name} ({status_name})"
+            plan.execution_time_ms = exec_time_ms
+            setattr(plan, "solver_status", status_name)
+            setattr(plan, "raw_objective", 0.0)
+            setattr(plan, "best_bound", 0.0)
+            return plan
+
         schedules: List[ScheduleResult] = []
         for t in range(M):
             team = teams[t]
