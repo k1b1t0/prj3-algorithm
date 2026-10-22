@@ -29,15 +29,15 @@ class TestTrimmer(unittest.TestCase):
         self.assertEqual([t.id for t in retained], [1])
         self.assertEqual([t.id for t in deferred], [2])
 
-    def test_skill_cascade_pruning(self):
-        # T1 (unskilled: 0.3) -> T2 (skilled: 0.9). T1 is dropped, so T2 must also be dropped
+    def test_independent_skill_filtering(self):
+        # T1 (unskilled: 0.3) is dropped. T2 (skilled: 0.9) is independently retained
         tasks = [
             Task(id=1, title="T1", repository="r1", asset_module="m1", r_i=8.0, e_i=3, skill="SKILL_A02"),
-            Task(id=2, title="T2", repository="r1", asset_module="m1", r_i=9.0, e_i=3, skill="SKILL_A01", predecessors=[1])
+            Task(id=2, title="T2", repository="r1", asset_module="m1", r_i=9.0, e_i=3, skill="SKILL_A01")
         ]
         retained, deferred = trim_cluster_for_team(tasks, self.team)
-        self.assertEqual(len(retained), 0)
-        self.assertEqual(set(t.id for t in deferred), {1, 2})
+        self.assertEqual([t.id for t in retained], [2])
+        self.assertEqual([t.id for t in deferred], [1])
 
     def test_leaf_pruning_capacity(self):
         # Total effort: 4 + 4 + 4 = 12 > capacity 10

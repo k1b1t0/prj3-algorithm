@@ -116,7 +116,7 @@ def generate_scenario_instance(
                 skill=t["skill"],
                 earliest_sprint=int(t.get("earliest_sprint", 1)),
                 deadline_sprint=int(t.get("deadline_sprint", 4)),
-                predecessors=t.get("predecessors", [])
+                predecessors=[]  # No-DAG: task-level dependencies decoupled
             )
             for t in data["tasks"]
         ]
@@ -182,7 +182,6 @@ def generate_scenario_instance(
     selected_ids = {t["id"] for t in selected_raw}
     cleaned_tasks = []
     for t in selected_raw:
-        valid_preds = [p for p in t.get("predecessors", []) if p in selected_ids]
         cleaned_tasks.append({
             "id": t["id"],
             "title": t.get("title", f"Task {t['id']}"),
@@ -193,7 +192,7 @@ def generate_scenario_instance(
             "skill": t.get("skill", "SKILL_A01"),
             "earliest_sprint": int(t.get("earliest_sprint", 1)),
             "deadline_sprint": int(t.get("deadline_sprint", 4)),
-            "predecessors": valid_preds
+            "predecessors": []  # No-DAG: task-level dependencies decoupled
         })
 
     teams_obj = get_standard_teams(n_teams)

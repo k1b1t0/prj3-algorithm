@@ -29,13 +29,6 @@ def build_affinity_matrix(
             dist = compute_context_distance(tasks[i], tasks[j], w_repo, w_mod, w_skill)
             sim = np.exp(-(dist ** 2) / (2 * (sigma ** 2)))
 
-            # Quan hệ DAG trực tiếp
-            ti = tasks[i]
-            tj = tasks[j]
-            has_dag = (tj.id in ti.predecessors) or (ti.id in tj.predecessors)
-            if has_dag:
-                sim = max(sim, dag_boost)
-
             A[i, j] = sim
             A[j, i] = sim
 
