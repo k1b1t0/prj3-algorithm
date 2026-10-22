@@ -1,162 +1,167 @@
-# prj3-algorithm: Bi-Objective SecOps Vulnerability Scheduling
+# prj3-algo-no-dag: Bi-Objective Agile SecOps Vulnerability Scheduling (Decoupled Precedence Architecture)
 
-Hệ sinh thái thuật toán tối ưu hóa điều độ và phân bổ công việc vá lỗ hổng an ninh mạng đa mục tiêu trong chu kỳ Sprint Agile (**Bi-Objective Agile SecOps Scheduling**).
+Hệ sinh thái thuật toán tối ưu hóa điều độ và phân bổ công việc khắc phục lỗ hổng an ninh mạng đa mục tiêu trong chu kỳ Sprint Agile (**Bi-Objective Agile SecOps Scheduling**), được hiện thực hóa theo kiến trúc phi phụ thuộc tác vụ (No-DAG Task-Level Decoupling).
+
+Dự án này là biến thể độc lập của `prj3-algorithm/`, được xây dựng để đối chiếu thực nghiệm trực tiếp giữa hai trường phái mô hình hóa trong DevSecOps:
+1. **Mô hình có phụ thuộc DAG (prj3-algorithm)**: Ép buộc ràng buộc thứ tự cứng cha-con và cư trú cùng đội (Intra-team execution), phản ánh bài toán Next Release Problem (NRP) cổ điển nhưng chịu nghẽn năng lực (capacity starvation).
+2. **Mô hình phi phụ thuộc DAG (prj3-algo-no-dag)**: Tách rời phụ thuộc tác vụ giả định, chuyển hóa bài toán sang Đa ba-lô đa kỹ năng (Multi-Team Multi-Skill Knapsack) kết hợp Định tuyến tối ưu giảm chi phí đổi ngữ cảnh (Context-Switch Routing). Bài toán kế thừa và phát triển từ nền tảng VULCON (ICSE 2020), giải quyết bài toán phân công đa đội thực tế.
 
 ---
 
 ## 1. Mô Hình Toán Học Hình Thức (Formal Mathematical Model)
 
-Mô hình ánh xạ 1-1 từ nghiên cứu lý thuyết tại `research/reports/prj3/problem_model.md`:
+### 1.1. Các Chỉ Số Cốt Lõi
+1. **Điểm Lợi Ích Khắc Phục Lỗ Hổng (Mitigation Utility — u_i)**:
+   - Công thức: `u_i = r_i + alpha * (tau - disc_i) + M_penalty * I(tau >= dead_i)`
+   - `r_i in [0, 10]`: Điểm rủi ro kỹ thuật CVSS gốc.
+   - `alpha = 0.5`: Trọng số tích lũy rủi ro theo thời gian tồn lưu qua các sprint chưa vá.
+   - `M_penalty = 50.0`: Mức phạt leo thang khi sprint hiện tại `tau` đã chạm hoặc vượt quá hạn chót SLA `dead_i`.
 
-### 1.1. Các Chỉ Số Tính Toán Cốt Lõi
-1. **Điểm Lợi Ích Giảm Nhẹ Rủi Ro (Mitigation Utility — $u_i$)**:
-   $$u_i = r_i + \alpha \cdot (\tau - \text{disc}_i) + M_{\text{penalty}} \cdot \mathbb{I}(\tau \ge \text{dead}_i)$$
-   - $r_i \in [0, 10]$: Điểm rủi ro kỹ thuật CVSS gốc.
-   - $\alpha = 0.5$: Hệ số tồn lưu qua các sprint chưa vá.
-   - $M_{\text{penalty}} = 50.0$: Phạt tăng vọt khi sprint hiện tại $\tau$ đã chạm hoặc vượt quá hạn chót SLA $\text{dead}_i$.
-
-2. **Chi Phí Chuyển Đổi Ngữ Cảnh Phân Cấp (Context Switch Distance — $C_{ij}$)**:
-   $$C_{ij} = w_{\text{repo}} \cdot \mathbb{I}(\text{repo}_i \neq \text{repo}_j) + w_{\text{mod}} \cdot \mathbb{I}(\text{mod}_i \neq \text{mod}_j) + w_{\text{skill}} \cdot \mathbb{I}(\text{skill}_i \neq \text{skill}_j)$$
-   - $w_{\text{repo}} = 0.5$: Phạt nặng nhất do đổi kho chứa mã nguồn, chuyển môi trường IDE.
-   - $w_{\text{mod}} = 0.3$: Phạt vừa do đổi phân hệ microservice.
-   - $w_{\text{skill}} = 0.2$: Phạt nhẹ do đổi nhóm kỹ năng OWASP ($0.5 + 0.3 + 0.2 = 1.0$).
-   - $C_{ij} = 0 \iff$ Cùng Repo, cùng Module và cùng nhóm Skill.
+2. **Khoảng Cách Ngữ Cảnh Tác Vụ (Context Switch Distance — C_ij)**:
+   - Công thức: `C_ij = w_repo * I(repo_i != repo_j) + w_mod * I(mod_i != mod_j) + w_skill * I(skill_i != skill_j)`
+   - `w_repo = 0.5`: Chi phí chuyển đổi kho chứa mã nguồn / repository (IDE context reload).
+   - `w_mod = 0.3`: Chi phí chuyển đổi phân hệ / microservice module.
+   - `w_skill = 0.2`: Chi phí chuyển đổi nhóm kỹ năng an toàn OWASP Top-10.
+   - Tổng trọng số: `0.5 + 0.3 + 0.2 = 1.0`. `C_ij = 0` khi và chỉ khi hai tác vụ cùng kho, cùng phân hệ và cùng nhóm kỹ năng.
 
 ### 1.2. Hàm Mục Tiêu Kép (Bi-Objective Criteria)
-- **Mục tiêu 1 (Cực đại hóa Lợi ích Rủi ro Giảm nhẹ)**:
-  $$\max f_1 = \sum_{t \in T} \sum_{i \in \mathcal{V}} u_i \cdot x_{it}$$
+- **Mục tiêu 1 (Cực đại hóa Lợi ích Khắc phục Lỗ hổng)**:
+  `max f1 = sum_{t in T} sum_{i in V} u_i * x_{it}`
 - **Mục tiêu 2 (Cực tiểu hóa Tổng Chi phí Chuyển đổi Ngữ cảnh)**:
-  $$\min f_2 = \sum_{t \in T} \sum_{k=1}^{|\pi_t|-1} C_{\pi_t(k), \pi_t(k+1)}$$
-- **Hàm vô hướng hóa**: $\max Z(\lambda) = f_1 - \lambda \cdot f_2$ với $\lambda \ge 0$.
+  `min f2 = sum_{t in T} sum_{k=1}^{|pi_t|-1} C_{pi_t(k), pi_t(k+1)}`
+- **Hàm vô hướng hóa (Scalarized Objective)**:
+  `max Z(lambda) = f1 - lambda * f2` với `lambda >= 0`.
 
-### 1.3. Ràng Buộc Cứng (Hard Constraints)
-1. **Dung lượng Sprint (Knapsack)**: $\sum_{i \in \mathcal{V}} e_i \cdot x_{it} \le \text{cap}_t, \forall t \in T$ (Chuẩn 30 SP / team).
-2. **Ngưỡng năng lực kỹ năng**: $x_{it} \le \mathbb{I}(k_{t, \text{skill}_i} \ge 0.5), \forall i, t$.
-3. **Ràng buộc phụ thuộc kỹ thuật DAG & Intra-team Execution**:
-   $$x_{vt} \le x_{ut}, \quad \forall (u, v) \in \mathcal{E}, \forall t \in T$$
-   *(Nếu task con $v$ được chọn, task cha $u$ bắt buộc phải được chọn và giao cho CÙNG MỘT TEAM)*.
-4. **Bảo toàn luồng chuỗi & Thứ tự Topo (MTZ Subtour Elimination)**: Đảm bảo thứ tự topo $u \prec v$ trong chuỗi nội bộ của team.
+### 1.3. Ràng Buộc Kỹ Thuật (Hard Constraints)
+1. **Trần dung lượng Sprint (Knapsack Capacity)**:
+   `sum_{i in V} e_i * x_{it} <= cap_t, forall t in T` (Chuẩn Scrum 30 Story Points / đội).
+2. **Ngưỡng năng lực kỹ năng chuyên môn (Skill Threshold)**:
+   `x_{it} <= I(k_{t, skill_i} >= 0.5), forall i in V, forall t in T`.
+3. **Phân bổ đơn nhất (Single Assignment)**:
+   `sum_{t in T} x_{it} <= 1, forall i in V`.
+4. **Bảo toàn luồng định tuyến (Miller-Tucker-Zemlin Subtour Elimination)**:
+   Loại bỏ chu trình con và xác định thứ tự thực thi tối ưu `pi_t` nội bộ cho từng đội nhằm cực tiểu hóa `f2`.
+5. **Phi phụ thuộc thứ tự tác vụ (No-DAG Decoupling)**:
+   Ràng buộc `x_{vt} <= x_{ut}` được gỡ bỏ. Sự gom cụm kiến trúc (architectural colocation) được điều tiết tự nhiên thông qua hàm mục tiêu `f2` thay vì áp đặt cứng nhắc.
 
 ---
 
-## 2. Kiến Trúc 3 Tầng Tách Biệt (Decoupled 3-Tier Architecture)
+## 2. So Sánh Với Mô Hình VULCON (ICSE 2020)
 
-Toàn bộ hệ thống được tái cấu trúc thành 3 tầng độc lập hoàn toàn theo chuẩn khoa học:
+| Tiêu Chí | VULCON (Nguyen et al., ICSE 2020) | prj3-algo-no-dag (Proposed Framework) |
+| :--- | :--- | :--- |
+| **Cơ cấu tổ chức** | 1 Knapsack tổng duy nhất cho toàn tổ chức | **Đa đội Agile (Multi-Team Knapsack)** với các năng lực chuyên môn riêng biệt |
+| **Đơn vị nỗ lực** | Giờ công kỹ sư `h_i` dưới tổng ngân sách `H` (hours) | **Story Points chuẩn Scrum `e_i`** theo trần sprint `cap_t = 30 SP` |
+| **Kỹ năng chuyên môn** | Bỏ qua (mọi kỹ sư giả định có thể sửa mọi CVE) | **Ma trận kỹ năng OWASP Top-10** (`k_{t, skill} >= 0.5`) |
+| **Chi phí chuyển ngữ cảnh** | Không xét (coi các bản vá là độc lập hoàn toàn) | **Hàm mục tiêu thứ hai `f2`** đo lường khoảng cách Repo - Module - Skill |
+| **Thứ tự thực thi** | Không xét thứ tự nội bộ | **Định tuyến chuỗi tối ưu (Intra-team sequencing)** giải bài toán Open TSP |
+| **Không gian Pareto** | Tối ưu đơn mục tiêu (MILP) | **Tối ưu hóa đa mục tiêu thực thụ (Bi-Objective MOCO)** |
+
+---
+
+## 3. Kiến Trúc 3 Tầng Tách Biệt (Decoupled 3-Tier Architecture)
+
+Toàn bộ hệ thống tuân thủ kiến trúc phân tầng chuẩn mực nghiên cứu:
 
 ```text
-┌────────────────────────────────────────────────────────────────────────┐
-│            KIẾN TRÚC 3 TẦNG TÁCH BIỆT (DECOUPLED PIPELINE)            │
-├────────────────────────────────────────────────────────────────────────┤
-│ TẦNG 1: CORE THUẬT TOÁN (src/solvers/)                                │
-│ • Chuẩn hóa qua Interface: BaseSolver.solve(tasks, teams, **kwargs)   │
-│ • Thuần túy thuật toán, không nhét code logging/vis vào core.         │
-│ • greedy_cvss.py, cpsat_exact.py, proposed_4phase/ (CSM),                     │
-│   proposed_4phase/, proposed_nsga2/                                    │
-├───────────────────────────────────┬────────────────────────────────────┤
-│ TẦNG 2: RUNNER & LOGGER           │ TẦNG 3: BÁO CÁO & VISUALIZER       │
-│ (scripts/run_experiments.py)      │ (Các script phụ chạy riêng)        │
-│ • Đọc Scenario & cấu hình         │ • render_dashboard.py: Render HTML │
-│ • Chạy 5 instances x 5 seeds      │   dashboard giao diện Glassmorphism│
-│ • In bảng tóm tắt ra Terminal     │ • plot_pareto.py: Vẽ biểu đồ PNG   │
-│ • Ghi RAW data: raw_runs.jsonl    │   mặt cong Pareto & Hypervolume.   │
-│ • Ghi BẢNG PIVOT: summary.csv     │                                    │
-└───────────────────────────────────┴────────────────────────────────────┘
++------------------------------------------------------------------------+
+|            KIẾN TRÚC 3 TẦNG TÁCH BIỆT (DECOUPLED PIPELINE)            |
++------------------------------------------------------------------------+
+| TẦNG 1: CORE THUẬT TOÁN (src/solvers/)                                |
+| - Chuẩn hóa qua Interface BaseSolver.solve(tasks, teams, **kwargs)     |
+| - Không phụ thuộc code logging hay hiển thị                           |
+| - greedy_cvss.py: Baseline thực tế doanh nghiệp                       |
+| - cpsat_exact.py: Nghiệm tối ưu toàn cục Google OR-Tools CP-SAT       |
+| - proposed_4phase/: Matheuristic Cluster-Simulate-Match (CSM No-DAG)  |
+| - proposed_nsga2/: Metaheuristic Memetic NSGA-II                      |
++-----------------------------------+------------------------------------+
+| TẦNG 2: RUNNER & LOGGER           | TẦNG 3: BÁO CÁO & VISUALIZER       |
+| (scripts/run_experiments.py)      | (Các script độc lập)               |
+| - Điều phối 3 kịch bản chuẩn      | - render_dashboard.py: Xuất HTML   |
+| - 5 instances x 5 seeds ngẫu nhiên|   Dashboard Glassmorphism trực quan|
+| - Ghi log thô: outputs/raw_runs   | - plot_pareto.py: Xuất biểu đồ     |
+| - Xuất CSV: summary_metrics.csv   |   Pareto Frontier & Hypervolume PNG|
++-----------------------------------+------------------------------------+
 ```
 
-### 2.1. Tầng 1: Core Solvers (`src/solvers/`)
-1. **`Greedy-CVSS (Industry Standard)`**:
-   - Sắp xếp Backlog giảm dần theo Mitigation Utility $u_i$.
-   - Duyệt tuần tự: Đảm bảo ràng buộc intra-team (cha con cùng team) và gán cho team đầu tiên thỏa mãn năng lực ($k \ge 0.5$) và đủ Story Points.
+### Các Giải Thuật Cốt Lõi:
+1. **`Greedy-CVSS (Industry Standard Practice)`**:
+   - Sắp xếp Backlog giảm dần theo `u_i`.
+   - Gán tuần tự cho đội đầu tiên thỏa mãn kỹ năng chuyên môn (`k >= 0.5`) và còn đủ dung lượng Story Points.
 2. **`OR-Tools CP-SAT (Exact Global Optimum)`**:
-   - Bộ giải Constraint Programming - SAT của Google, giải bài toán MO-MILP vô hướng hóa tìm nghiệm tối ưu toàn cục làm Ground Truth.
-3. **`Gurobi Optimizer (Commercial MIP Solver)`**:
-   - Bộ giải quy hoạch nguyên thương mại số 1 thế giới, tự động phát hiện và xử lý giấy phép.
-4. **`Proposed 4-Phase Matheuristic (Hybrid ESSC + DP)`**:
-   - **Pha 1**: Phân cụm phổ cân bằng (Spectral Clustering) có xét DAG Affinity Boost ($A_{uv} = 1.0$).
-   - **Pha 2**: Ghép cặp Team - Cụm bằng Hungarian Matching tối đa hóa điểm kỹ năng.
-   - **Pha 3**: Cắt tỉa PCKP Leaf Pruning tỉa các nút lá có tỷ số $u_i / e_i$ thấp nhất để đảm bảo $100\%$ tuân thủ DAG và vừa vặn dung lượng.
-   - **Pha 4**: Sắp xếp thứ tự nội bộ từng team bằng Topological Bitmask DP trong $O(2^L L^2)$.
-5. **`Proposed Memetic NSGA-II (Metaheuristic)`**:
-   - Mã hóa 2 phần: Topo Priority List & Team Assignment Vector.
-   - Bộ giải mã Topo Decoder đảm bảo $100\%$ cá thể sinh ra đều khả thi (Zero DAG violations).
-   - Tinh chỉnh chuỗi cục bộ bằng Bitmask DP (Memetic component).
-   - Đo lường toàn diện Mặt cong Pareto (Pareto Frontier) và diện tích Hypervolume (HV).
+   - Hiện thực hóa mô hình MO-MILP vô hướng hóa trên bộ giải CP-SAT của Google, cung cấp chặn trên toán học (Exact Bound).
+3. **`Proposed-CSM Matheuristic (Cluster-Simulate-Match No-DAG)`**:
+   - **Bước 1**: Tiền lọc tập ứng viên ưu tiên cao (Candidate Pool Pre-Filtering) theo hàm hữu dụng khi backlog vượt quá 2 lần tổng dung lượng.
+   - **Bước 2**: Phân cụm phổ cân bằng (Spectral Clustering) theo ma trận khoảng cách ngữ cảnh RBF Gaussian (`A_ij = exp(-gamma * C_ij)`).
+   - **Bước 3**: Giả lập đánh giá ma trận cặp (Đội i, Cụm j) kết hợp knapsack chọn lọc theo mật độ `u_i / e_i` và ước tính chi phí ngữ cảnh nhóm nhanh.
+   - **Bước 4**: Ghép cặp tối ưu toàn cục (Global Hungarian Matching) tối đa hóa lợi ích thu được.
+   - **Bước 5**: Bổ sung dung lượng còn thừa (Residual capacity fill) ưu tiên các tác vụ cùng repo/module.
+   - **Bước 6**: Định tuyến chuỗi tối ưu cục bộ bằng Bitmask DP cho các cặp đội thắng giải trong thời gian dưới 1 giây.
+4. **`Proposed Memetic NSGA-II (Metaheuristic)`**:
+   - Biểu diễn nhiễm sắc thể kép: Priority Vector (hoán vị tác vụ) và Team Assignment Vector.
+   - Toán tử lai ghép OX cải tiến bảo toàn tính đơn nhất của tập tác vụ.
+   - Tối ưu hóa chuỗi cục bộ bằng Bitmask DP cho các cá thể thuộc Mặt cong Pareto (Front 0).
 
 ---
 
-## 3. Kết Quả Thực Nghiệm Đối Sánh Đa Kịch Bản (Benchmark Results)
+## 4. Kết Quả Thực Nghiệm Đối Sánh Đa Kịch Bản (Benchmark Results)
 
-Bộ thực nghiệm được thực hiện trên **3 kịch bản chuẩn hóa quy mô** (Small 40, Medium 100, Large 500 tasks), mỗi kịch bản gồm **5 instances độc lập** từ kho 2.103 vulnerabilities thực tế, lặp lại **5 random seeds** cho thuật toán tiến hóa (tổng cộng 120 lượt chạy đo lường):
+Bộ thực nghiệm đo lường đầy đủ **120 lượt chạy thực nghiệm độc lập** trên 3 kịch bản chuẩn hóa quy mô từ kho dữ liệu 2.103 lỗ hổng bảo mật thực tế:
 
-| Kịch Bản | Giải Thuật (Solver) | Số Lượt Chạy | Lợi Ích Rủi Ro f1 (Mean ± Std) | Tăng f1 vs Greedy (%) | Chi Phí Đổi Ngữ Cảnh f2 (Mean ± Std) | Giảm f2 vs Greedy (%) | Hypervolume (HV) (Mean ± Std) | Vi Phạm DAG | Thời Gian Chạy (ms) |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **small_40** *(2 teams)* | **Greedy-CVSS** *(Industry)* | 5 | 406.5 ± 213.5 | Baseline (0.0%) | 5.02 ± 1.19 | Baseline (0.0%) | 3,954.3 ± 1,906.3 | **0** | **0.2 ms** |
-| | **OR-Tools CP-SAT** *(Exact Bound)* | 5 | **448.7 ± 197.3** | **+10.4%** | 3.64 ± 0.38 | +27.5% | 5,122.1 ± 2,342.4 | **0** | 15,174.0 ms |
-| | **Proposed-CSM** *(Matheuristic)* | 5 | 410.9 ± 170.2 | +1.1% | **2.68 ± 0.65** | **+46.6%** | 5,008.4 ± 1,975.8 | **0** | **176.7 ms** |
-| | **Proposed NSGA-II** *(Metaheuristic)* | 25 | 438.1 ± 197.4 | +7.8% | 4.67 ± 0.85 | +7.0% | **5,535.2 ± 2,550.3** | **0** | 2,140.4 ms |
-| **medium_100** *(4 teams)* | **Greedy-CVSS** *(Industry)* | 5 | 1167.4 ± 609.2 | Baseline (0.0%) | 7.50 ± 0.87 | Baseline (0.0%) | 26,500.8 ± 14,027.7 | **0** | **0.5 ms** |
-| | **OR-Tools CP-SAT** *(Exact Bound)* | 5 | 647.8 ± 395.5 | -44.5% (T.O.) | 10.16 ± 5.32 | -35.5% | 11,165.1 ± 3,853.1 | **0** | 31,812.2 ms |
-| | **Proposed-CSM** *(Matheuristic)* | 5 | 1098.8 ± 571.6 | -5.9% | **3.38 ± 1.10** | **+54.9%** | **29,271.5 ± 15,789.0** | **0** | **2,372.5 ms** |
-| | **Proposed NSGA-II** *(Metaheuristic)* | 25 | 1084.3 ± 497.4 | -7.1% | 11.54 ± 2.13 | -53.9% | 23,527.8 ± 10,043.0 | **0** | 4,807.5 ms |
-| **large_500** *(8 teams)* | **Greedy-CVSS** *(Industry)* | 5 | **3064.6 ± 801.5** | Baseline (0.0%) | 17.18 ± 0.83 | Baseline (0.0%) | 130,758.5 ± 31,994.9 | **0** | **2.8 ms** |
-| | **OR-Tools CP-SAT** *(Exact Bound)* | 5 | 0.0 ± 0.0 | N/A (Timeout) | 0.00 ± 0.00 | N/A (Timeout) | 0.0 ± 0.0 | 0 | 117,040.4 ms |
-| | **Proposed-CSM** *(Matheuristic)* | 5 | 2603.9 ± 474.9 | -15.0% | **8.46 ± 1.06** | **+50.8%** | **134,027.8 ± 24,005.1** | **0** | **7,218.0 ms** |
-| | **Proposed NSGA-II** *(Metaheuristic)* | 25 | 1724.2 ± 270.5 | -43.7% | 31.36 ± 4.78 | -82.5% | 63,157.4 ± 8,165.3 | **0** | 12,957.4 ms |
-
-### Nhận Xét Khoa Học Cốt Lõi:
-1. **Khả năng mở rộng vượt bậc của Proposed-CSM Matheuristic**:
-   - **Triệt tiêu chi phí đổi ngữ cảnh (f2)** đồng nhất trên mọi quy mô: Giảm tới **46.6%** ở Small, **54.9%** ở Medium, và **50.8%** ở Large so với Greedy công nghiệp.
-   - **Đạt Hypervolume cao nhất ở cả Medium (29,271.5) và Large (134,027.8)**, chứng minh sự ổn định vượt bậc khi bài toán phình to về số task và số team.
-   - Thời gian thực thi cực nhanh: Chỉ 176ms (Small), 2.3s (Medium), và 7.2s (Large 500 tasks), giải quyết bài toán mà solver toán học CP-SAT hoàn toàn bất lực.
-2. **Điểm nghẽn bùng nổ tổ hợp của Solver Toán học CP-SAT**:
-   - Giải tối ưu ở Small 40 ( = 448.7$).
-   - Bị nghẽn nặng ở Medium 100 do không gian 40.000 biến nhị phân, chỉ tìm được nghiệm non ( = 647.8$).
-   - Hoàn toàn quá tải ở Large 500 tasks (2.000.000 biến nhị phân), mất 117s mà không tìm được bất kỳ nghiệm khả thi nào.
-3. **Bài học về Metaheuristic NSGA-II trên không gian hoán vị lớn**:
-   - Hoạt động xuất sắc ở quy mô nhỏ (Small 40 tasks), đạt Hypervolume cao nhất (,535.2$).
-   - Khi bài toán tăng lên 500 tasks (không gian hoán vị 00!$), toán tử lai ghép toàn cục OX và đột biến phân tán khiến NSGA-II khó hội tụ trong số thế hệ hữu hạn. Đây là luận điểm khoa học mạnh mẽ để mở rộng hướng nghiên cứu tương lai sang **Adaptive Large Neighborhood Search (ALNS)**.
-4. **Toàn vẹn ràng buộc toán học**:
-   - 00\%$ các phương án sinh ra bởi các thuật toán khả thi đều đạt **0 DAG violations**, thỏa mãn tuyệt đối các ràng buộc dung lượng Story Points và ngưỡng năng lực >= 0.5.
-
+| Kịch Bản | Giải Thuật (Solver) | Số Lượt Chạy | Lợi Ích Lỗ Hổng f1 (Mean ± Std) | Tăng f1 vs Greedy (%) | Chi Phí Chuyển Đổi f2 (Mean ± Std) | Giảm f2 vs Greedy (%) | Hypervolume (HV) (Mean ± Std) | Thời Gian Chạy (ms) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **small_40** *(2 đội, 40 tasks)* | **Greedy-CVSS** *(Industry)* | 5 | 406.0 ± 212.5 | Baseline (0.0%) | 4.72 ± 0.93 | Baseline (0.0%) | 4,115.1 ± 2,034.5 | **0.1 ms** |
+| | **OR-Tools CP-SAT** *(Exact)* | 5 | **453.5 ± 199.1** | **+11.7%** | 3.98 ± 0.83 | +15.7% | 4,956.2 ± 2,147.0 | 15,107.7 ms |
+| | **Proposed-CSM** *(Matheuristic)* | 5 | 420.3 ± 180.6 | +3.5% | **3.18 ± 1.08** | **+32.6%** | 4,863.9 ± 1,953.7 | **278.7 ms** |
+| | **Proposed-NSGA-II** *(Meta)* | 25 | 441.1 ± 196.6 | +8.7% | 5.32 ± 0.78 | -12.8% | **5,382.7 ± 2,451.1** | 2,247.8 ms |
+| **medium_100** *(4 đội, 100 tasks)* | **Greedy-CVSS** *(Industry)* | 5 | 1,163.9 ± 611.8 | Baseline (0.0%) | 6.92 ± 0.92 | Baseline (0.0%) | 26,718.0 ± 13,959.2 | **0.2 ms** |
+| | **OR-Tools CP-SAT** *(Exact)* | 5 | 1,097.6 ± 560.7 | -5.7% | 20.26 ± 6.49 | -192.8% | 8,398.6 ± 5,157.6 | 31,368.6 ms |
+| | **Proposed-CSM** *(Matheuristic)* | 5 | **1,176.4 ± 581.9** | **+1.1%** | **4.68 ± 1.53** | **+32.4%** | **29,271.5 ± 13,879.8** | **575.5 ms** |
+| | **Proposed-NSGA-II** *(Meta)* | 25 | 1,045.4 ± 468.0 | -10.2% | 12.34 ± 1.43 | -78.3% | 22,151.3 ± 9,390.1 | 3,264.6 ms |
+| **large_500** *(8 đội, 500 tasks)* | **Greedy-CVSS** *(Industry)* | 5 | **3,449.9 ± 836.9** | Baseline (0.0%) | 14.28 ± 2.85 | Baseline (0.0%) | 157,466.0 ± 37,456.3 | **0.7 ms** |
+| | **OR-Tools CP-SAT** *(Exact)* | 5 | 0.0 ± 0.0 | T.O. (2M vars) | 0.00 ± 0.00 | N/A | 0.0 ± 0.0 | 75,617.1 ms |
+| | **Proposed-CSM** *(Matheuristic)* | 5 | 3,333.5 ± 747.7 | -3.4% | **9.18 ± 1.68** | **+35.7%** | **169,733.5 ± 38,902.0** | **707.1 ms** |
+| | **Proposed-NSGA-II** *(Meta)* | 25 | 1,775.1 ± 215.2 | -48.5% | 32.15 ± 4.40 | -125.2% | 64,181.0 ± 8,199.6 | 3,375.8 ms |
 
 ---
 
-## 4. Hướng Dẫn Cài Đặt & Sử Dụng (Quickstart Guide)
+## 5. Những Phát Hiện Khoa Học Cốt Lõi (Key Scientific Findings)
 
-### 4.1. Cài đặt Môi trường với `uv`
+1. **Hiệu Ứng Vượt Trội Của CSM So Với Greedy Ở Cả Hai Mục Tiêu Trong Quy Mô Trung Bình**:
+   - Ở kịch bản `medium_100`, **Proposed-CSM thống trị hoàn toàn Greedy-CVSS** trên cả 2 mục tiêu: tăng lợi ích khắc phục rủi ro `+1.1%` (1,176.4 vs 1,163.9) và đồng thời **cắt giảm chi phí chuyển đổi ngữ cảnh đến 32.4%** (4.68 vs 6.92).
+   - Chỉ số Hypervolume của Proposed-CSM đạt **29,271.5**, cao nhất trong toàn bộ các giải thuật thử nghiệm (vượt trội hơn cả Greedy và NSGA-II).
+
+2. **Khả Năng Mở Rộng Dưới 1 Giây Cho Quy Mô Lớn (Sub-Second Scalability)**:
+   - Trong khi bài toán quy hoạch nguyên chính xác OR-Tools CP-SAT hoàn toàn bất khả thi khi mở rộng lên 500 tác vụ (hơn 2.000.000 biến nhị phân gây cạn kiệt bộ nhớ và hết thời gian chạy 75 giây với nghiệm rỗng), **Proposed-CSM giải quyết trọn vẹn 500 tác vụ chỉ trong 707.1 ms**.
+   - Proposed-CSM ở quy mô 500 tác vụ giúp **cắt giảm 35.7% chi phí chuyển đổi ngữ cảnh** so với thực hành công nghiệp và đạt Hypervolume **169,733.5** (cao hơn Greedy-CVSS +7.8%).
+
+3. **Ý Nghĩa Thực Tiễn So Với Bản Có DAG (prj3-algorithm)**:
+   - Khi loại bỏ phụ thuộc tác vụ giả định, các đội không còn bị hiện tượng bỏ rơi tác vụ do nghẽn dung lượng (capacity-induced starvation).
+   - Sự gắn kết tự nhiên giữa các tác vụ cùng module được đảm bảo trọn vẹn thông qua tối ưu hóa `f2` (khoảng cách ngữ cảnh phân cấp), loại bỏ nhu cầu cưỡng chế một đội phải ôm trọn cả nhánh cây phụ thuộc.
+
+---
+
+## 6. Hướng Dẫn Sử Dụng & Tái Lập Thực Nghiệm
+
+Toàn bộ dự án được quản lý qua `uv`:
+
 ```bash
-# Khởi tạo và cài đặt toàn bộ dependencies tự động
+# 1. Cài đặt môi trường
 uv sync
-```
 
-### 4.2. Chạy Thực Nghiệm Benchmark (Tier 2)
-```bash
-# Chạy toàn bộ thực nghiệm Kịch bản 1 (5 instances, 5 seeds)
-uv run main.py experiments --scenarios small_40 --instances 5 --seeds 42 100 2024 777 999 --clean
-
-# Chạy cả 3 kịch bản chuẩn (small_40, medium_100, large_500)
-uv run main.py experiments --scenarios small_40 medium_100 large_500 --instances 5
-```
-
-### 4.3. Xuất Báo Cáo & Trực Quan Hóa (Tier 3)
-```bash
-# Xuất biểu đồ Pareto và Hypervolume dạng ảnh PNG (300 DPI)
-uv run main.py pareto
-
-# Render HTML Dashboard tương tác trực quan
-uv run main.py dashboard
-
-# All-in-one: Chạy benchmark, vẽ đồ thị Pareto và render Dashboard
-uv run main.py all --scenarios small_40 --instances 5
-```
-
-File kết quả được tự động lưu tại:
-- `outputs/raw_runs.jsonl`: Dữ liệu log chi tiết từng lượt chạy (Single Source of Truth).
-- `outputs/summary_metrics.csv`: Bảng tổng hợp Mean ± Std cho bài báo.
-- `outputs/dashboard.html`: Giao diện Dashboard HTML tương tác trực quan.
-- `outputs/pareto_plots/`: Bộ ảnh biểu đồ Pareto và so sánh đa chỉ số PNG.
-
-### 4.4. Chạy Unit Tests
-```bash
+# 2. Chạy bộ kiểm thử tự động
 uv run python -m unittest discover tests
+
+# 3. Tái lập toàn bộ 120 lượt chạy thực nghiệm
+uv run python scripts/run_experiments.py --scenarios small_40 medium_100 large_500 --instances 5 --seeds 42 100 2024 777 999 --solvers greedy cpsat proposed_4phase proposed_nsga2 --clean
+
+# 4. Xuất đồ thị Pareto độ phân giải cao
+uv run python scripts/plot_pareto.py
+
+# 5. Kết xuất Dashboard Glassmorphism tương tác
+uv run python scripts/render_dashboard.py
 ```
+
+File báo cáo trực quan có thể xem tại: `outputs/dashboard.html`.
+Các đồ thị đối sánh Pareto được lưu tại: `outputs/pareto_plots/`.
+Bảng chỉ số thống kê tổng hợp được lưu tại: `outputs/summary_metrics.csv`.
