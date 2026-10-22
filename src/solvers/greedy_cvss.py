@@ -46,51 +46,15 @@ class GreedyCVSSSolver(BaseSolver):
         team_efforts: Dict[str, int] = {tm.team_id: 0 for tm in teams}
         task_to_team: Dict[int, str] = {}
 
-        # 2. Duyệt đa vòng lặp (Multi-pass) để tránh hiện tượng task con có utility cao bị bỏ rơi do cha duyệt sau
-        unassigned = list(sorted_tasks)
-        changed = True
-        while changed and unassigned:
-            changed = False
-            remaining = []
-            for task in unassigned:
-                # Kiểm tra ràng buộc cha-con DAG
-                # 1. Toàn bộ task cha phải được nhận trong sprint
-                all_parents_done = all(p in task_to_team for p in task.predecessors)
-                if not all_parents_done:
-                    remaining.append(task)
-                    continue
-
-                # 2. Ràng buộc intra-team: Nếu có cha, bắt buộc phải cùng team với các cha
-                parent_teams = {task_to_team[p] for p in task.predecessors}
-                if len(parent_teams) > 1:
-                    remaining.append(task)
-                    continue
-
-                mandatory_team_id: Optional[str] = parent_teams.pop() if parent_teams else None
-
-                # Tìm team phù hợp
-                best_team: Optional[Team] = None
-                if mandatory_team_id is not None:
-                    tm = teams_dict[mandatory_team_id]
-                    rem_cap = tm.capacity_sp - team_efforts[tm.team_id]
-                    if rem_cap >= task.e_i and tm.get_skill_score(task.skill) >= skill_thresh:
-                        best_team = tm
-                else:
-                    for tm in teams:
-                        rem_cap = tm.capacity_sp - team_efforts[tm.team_id]
-                        if rem_cap >= task.e_i and tm.get_skill_score(task.skill) >= skill_thresh:
-                            best_team = tm
-                            break
-
-                if best_team is not None:
-                    team_assigned[best_team.team_id].append(task)
-                    team_efforts[best_team.team_id] += task.e_i
-                    task_to_team[task.id] = best_team.team_id
-                    changed = True
-                else:
-                    remaining.append(task)
-
-            unassigned = remaining
+        # 2. Duyệt tuần tự: Gán cho team đầu tiên thỏa mãn kỹ năng và còn đủ dung lượng SP
+        for task in sorted_tasks:
+            for tm in teams:
+                rem_cap = tm.capacity_sp - team_efforts[tm.team_id]
+                if rem_cap >= task.e_i and tm.get_skill_score(task.skill) >= skill_thresh:
+                    team_assigned[tm.team_id].append(task)
+                    team_efforts[tm.team_id] += task.e_i
+                    task_to_team[task.id] = tm.team_id
+                    break
 
         # Đóng gói ScheduleResult cho từng team
         schedules: List[ScheduleResult] = []
