@@ -35,9 +35,8 @@ def trim_cluster_for_team(
         for tid, t in retained_map.items():
             for p in t.predecessors:
                 if p not in retained_map:
-                    if any(orig.id == p for orig in cluster_tasks):
-                        to_remove.append(tid)
-                        break
+                    to_remove.append(tid)
+                    break
         for tid in to_remove:
             deferred.append(retained_map.pop(tid))
             changed = True

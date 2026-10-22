@@ -43,7 +43,7 @@ def plot_pareto_fronts(raw_runs: List[Dict[str, Any]], output_dir: Path):
         # Lọc các giải thuật
         nsga_runs = [r for r in sc_runs if "nsga" in r["solver"].lower()]
         greedy_runs = [r for r in sc_runs if "greedy" in r["solver"].lower()]
-        prop_runs = [r for r in sc_runs if "4phase" in r["solver"].lower() or "proposed" in r["solver"].lower() and "nsga" not in r["solver"].lower()]
+        prop_runs = [r for r in sc_runs if any(k in r["solver"].lower() for k in ["4phase", "csm", "proposed"]) and "nsga" not in r["solver"].lower()]
         exact_runs = [r for r in sc_runs if "cp-sat" in r["solver"].lower() or "exact" in r["solver"].lower()]
 
         plt.figure(figsize=(10, 6.5), dpi=300)

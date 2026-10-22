@@ -165,9 +165,8 @@ class ProposedNSGA2Solver(BaseSolver):
         raw_pareto_points = [chrom.objectives for chrom in pareto_chromosomes]
         pareto_front = extract_pareto_front(raw_pareto_points)
 
-        # Tính toán Hypervolume (HV)
-        max_cost = max([p[1] for p in pareto_front], default=10.0)
-        ref_point = (0.0, round(max_cost * 1.5 + 5.0, 2))
+        # Tính toán Hypervolume (HV) với Reference Point chuẩn hóa
+        ref_point = kwargs.get("ref_point", (0.0, 15.0))
         hv = compute_hypervolume(pareto_front, ref_point=ref_point)
 
         # Chọn nghiệm đại diện (Compromise Solution) tối đa hóa Z = f1 - lambda * f2

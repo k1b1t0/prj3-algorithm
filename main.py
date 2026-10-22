@@ -32,7 +32,7 @@ def main():
     sub_exp.add_argument("--scenarios", nargs="*", default=["small_40"], help="Scenarios list (small_40, medium_100, large_500)")
     sub_exp.add_argument("--instances", type=int, default=5, help="Number of instances per scenario (default: 5)")
     sub_exp.add_argument("--seeds", nargs="*", type=int, default=[42, 100, 2024, 777, 999], help="Random seeds")
-    sub_exp.add_argument("--solvers", nargs="*", default=["greedy", "cpsat", "gurobi", "proposed_4phase", "proposed_nsga2"], help="Solvers")
+    sub_exp.add_argument("--solvers", nargs="*", default=["greedy", "cpsat", "proposed_4phase", "proposed_nsga2"], help="Solvers")
     sub_exp.add_argument("--clean", action="store_true", help="Clean raw output file before starting")
 
     # 2. Render dashboard (Tier 3)
@@ -51,7 +51,7 @@ def main():
     sub_all.add_argument("--scenarios", nargs="*", default=["small_40"], help="Scenarios list")
     sub_all.add_argument("--instances", type=int, default=5, help="Instances count")
     sub_all.add_argument("--seeds", nargs="*", type=int, default=[42, 100, 2024, 777, 999], help="Random seeds")
-    sub_all.add_argument("--solvers", nargs="*", default=["greedy", "cpsat", "gurobi", "proposed_4phase", "proposed_nsga2"], help="Solvers")
+    sub_all.add_argument("--solvers", nargs="*", default=["greedy", "cpsat", "proposed_4phase", "proposed_nsga2"], help="Solvers")
     sub_all.add_argument("--clean", action="store_true", help="Clean raw output file before starting")
 
     args = parser.parse_args()

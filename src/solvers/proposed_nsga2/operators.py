@@ -176,7 +176,7 @@ def mutate_chromosome(
 
 def fast_non_dominated_sort(population: List[Chromosome]) -> List[List[Chromosome]]:
     """Thuật toán Sắp xếp Không bị thống trị nhanh (Fast Non-dominated Sort của Deb et al.)."""
-    fronts: List[List[Chromosome]] = [[]]
+    front_indices: List[List[int]] = [[]]
     S: Dict[int, List[int]] = defaultdict(list)
     n = [0] * len(population)
 
@@ -189,26 +189,24 @@ def fast_non_dominated_sort(population: List[Chromosome]) -> List[List[Chromosom
 
         if n[p_idx] == 0:
             p.rank = 0
-            fronts[0].append(p)
+            front_indices[0].append(p_idx)
 
     curr_idx = 0
-    while curr_idx < len(fronts) and fronts[curr_idx]:
-        next_front = []
-        for p in fronts[curr_idx]:
-            p_idx = population.index(p)
+    while curr_idx < len(front_indices) and front_indices[curr_idx]:
+        next_front: List[int] = []
+        for p_idx in front_indices[curr_idx]:
             for q_idx in S[p_idx]:
                 n[q_idx] -= 1
                 if n[q_idx] == 0:
-                    q = population[q_idx]
-                    q.rank = curr_idx + 1
-                    next_front.append(q)
+                    population[q_idx].rank = curr_idx + 1
+                    next_front.append(q_idx)
         curr_idx += 1
         if next_front:
-            fronts.append(next_front)
+            front_indices.append(next_front)
         else:
             break
 
-    return fronts
+    return [[population[i] for i in front] for front in front_indices if front]
 
 
 def calculate_crowding_distance(front: List[Chromosome]):

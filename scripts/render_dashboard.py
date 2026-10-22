@@ -432,9 +432,10 @@ def render_html(raw_runs: List[Dict[str, Any]], summary_rows: List[Dict[str, Any
               <th>Solver</th>
               <th>Runs</th>
               <th>f1 Mitigated Utility (Mean ± Std)</th>
+              <th>f1 Gain vs Greedy (%)</th>
               <th>f2 Switch Cost (Mean ± Std)</th>
               <th>Switch Cost Reduction (%)</th>
-              <th>Skill Match Score</th>
+              <th>Hypervolume</th>
               <th>DAG Violations</th>
               <th>Runtime (ms)</th>
             </tr>
@@ -513,14 +514,22 @@ def render_html(raw_runs: List[Dict[str, Any]], summary_rows: List[Dict[str, Any
         const redColor = redVal > 0 ? "var(--success)" : "var(--text-muted)";
         const redText = redVal > 0 ? `+${{redVal.toFixed(1)}}%` : "0.0%";
 
+        const gainVal = parseFloat(row.f1_gain_pct_vs_greedy || 0);
+        const gainColor = gainVal > 0 ? "var(--accent)" : "var(--text-muted)";
+        const gainText = gainVal > 0 ? `+${{gainVal.toFixed(1)}}%` : "0.0%";
+
+        const hvVal = parseFloat(row.hypervolume_mean || 0);
+        const hvStr = hvVal > 0 ? `${{row.hypervolume_mean}} ± ${{row.hypervolume_std || 0}}` : "N/A";
+
         tr.innerHTML = `
           <td><strong>${{row.scenario}}</strong></td>
           <td><span class="${{badgeClass}}">${{row.solver}}</span></td>
           <td>${{row.runs_count}}</td>
           <td><strong>${{row.f1_utility_mean}}</strong> ± ${{row.f1_utility_std}}</td>
+          <td style="color: ${{gainColor}}; font-weight: 700;">${{gainText}}</td>
           <td>${{row.f2_switch_cost_mean}} ± ${{row.f2_switch_cost_std}}</td>
           <td style="color: ${{redColor}}; font-weight: 700;">${{redText}}</td>
-          <td>${{row.sms_mean}}</td>
+          <td><span style="font-family: 'JetBrains Mono', monospace;">${{hvStr}}</span></td>
           <td><span style="color: ${{row.dag_violations_total == 0 ? 'var(--success)' : 'var(--danger)'}}">${{row.dag_violations_total}}</span></td>
           <td><span style="font-family: 'JetBrains Mono', monospace;">${{row.execution_time_ms_mean}} ms</span></td>
         `;

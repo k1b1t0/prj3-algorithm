@@ -10,7 +10,6 @@ dependencies = [
     "scikit-learn>=1.4.0",
     "ortools>=9.15.6755",
     "matplotlib>=3.11.2",
-    "gurobipy>=13.0.3",
 ]
 
 [build-system]
