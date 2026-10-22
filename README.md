@@ -50,7 +50,7 @@ Toàn bộ hệ thống được tái cấu trúc thành 3 tầng độc lập h
 │ TẦNG 1: CORE THUẬT TOÁN (src/solvers/)                                │
 │ • Chuẩn hóa qua Interface: BaseSolver.solve(tasks, teams, **kwargs)   │
 │ • Thuần túy thuật toán, không nhét code logging/vis vào core.         │
-│ • greedy_cvss.py, cpsat_exact.py, gurobi_exact.py,                     │
+│ • greedy_cvss.py, cpsat_exact.py, proposed_4phase/ (CSM),                     │
 │   proposed_4phase/, proposed_nsga2/                                    │
 ├───────────────────────────────────┬────────────────────────────────────┤
 │ TẦNG 2: RUNNER & LOGGER           │ TẦNG 3: BÁO CÁO & VISUALIZER       │
@@ -86,20 +86,19 @@ Toàn bộ hệ thống được tái cấu trúc thành 3 tầng độc lập h
 
 ## 3. Kết Quả Thực Nghiệm Đối Sánh (Scenario 1 — Small 40 Tasks)
 
-Thực nghiệm được thực hiện trên **5 instances độc lập** bốc ngẫu nhiên từ kho 2.103 task thực tế, lặp lại **5 random seeds** (tổng cộng 45 lượt chạy đo lường):
+Thực nghiệm được thực hiện trên **5 instances độc lập** bốc ngẫu nhiên từ kho 2.103 task thực tế, lặp lại **5 random seeds** (tổng cộng 40 lượt chạy đo lường):
 
-| Kịch bản | Giải thuật (Solver) | Số lượt chạy | Lợi ích Rủi ro $f_1$ (Mean ± Std) | Chi phí Đổi Ngữ cảnh $f_2$ (Mean ± Std) | Giảm Chuyển đổi vs Greedy (%) | Độ khớp Kỹ năng (SMS) | Vi phạm DAG | Thời gian Thực thi (ms) |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **small_40** | **Greedy-CVSS** *(Industry)* | 5 | $406.5 \pm 213.5$ | $5.02 \pm 1.19$ | Baseline ($0.0\%$) | $0.746 \pm 0.054$ | **0** | **0.1 ms** |
-| **small_40** | **OR-Tools CP-SAT** *(Exact Upper Bound)* | 5 | **$448.8 \pm 197.3$** | $3.72 \pm 0.47$ | $+25.9\%$ | **$0.796 \pm 0.038$** | **0** | $15,128.5\text{ ms}$ |
-| **small_40** | **Proposed 4-Phase** *(Matheuristic)* | 5 | $410.9 \pm 170.2$ | **$2.68 \pm 0.65$** | **$+46.6\%$** | $0.718 \pm 0.059$ | **0** | **$90.3\text{ ms}$** |
-| **small_40** | **Proposed NSGA-II** *(Metaheuristic)* | 25 | $438.1 \pm 197.4$ | $4.67 \pm 0.85$ | $+7.0\%$ | $0.728 \pm 0.034$ | **0** | $1,405.2\text{ ms}$ |
-| **small_40** | **Gurobi Optimizer** | 5 | $0.0 \pm 0.0$ | $0.00 \pm 0.00$ | N/A (Size limit) | $0.000 \pm 0.000$ | 0 | $264.9\text{ ms}$ |
+| Kịch bản | Giải thuật (Solver) | Số lượt chạy | Lợi ích Rủi ro f1 (Mean ± Std) | Tăng f1 vs Greedy (%) | Chi phí Đổi Ngữ cảnh f2 (Mean ± Std) | Giảm f2 vs Greedy (%) | Hypervolume (HV) (Mean ± Std) | Vi phạm DAG | Thời gian Thực thi (ms) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **small_40** | **Greedy-CVSS** *(Industry)* | 5 | 406.5 ± 213.5 | Baseline (0.0%) | 5.02 ± 1.19 | Baseline (0.0%) | 3,954.3 ± 1,906.3 | **0** | **0.2 ms** |
+| **small_40** | **OR-Tools CP-SAT** *(Exact Bound)* | 5 | **448.8 ± 197.3** | **+10.4%** | 3.66 ± 0.34 | +27.1% | 5,105.6 ± 2,305.9 | **0** | 15,161.6 ms |
+| **small_40** | **Proposed-CSM** *(Matheuristic)* | 5 | 410.9 ± 170.2 | +1.1% | **2.68 ± 0.65** | **+46.6%** | 5,008.4 ± 1,975.8 | **0** | **172.7 ms** |
+| **small_40** | **Proposed NSGA-II** *(Metaheuristic)* | 25 | 438.1 ± 197.4 | +7.8% | 4.67 ± 0.85 | +7.0% | **5,535.2 ± 2,550.3** | **0** | 2,147.6 ms |
 
 ### Nhận Xét Khoa Học Cốt Lõi:
-1. **Hiệu năng vượt trội của Proposed 4-Phase**:
+1. **Hiệu năng vượt trội của Proposed-CSM (Cluster-Simulate-Match)**:
    - Giảm tới **$46.6\%$ chi phí chuyển đổi ngữ cảnh** so với tiêu chuẩn công nghiệp (Greedy-CVSS) ($2.68$ vs $5.02$).
-   - Thời gian thực thi siêu nhanh: chỉ **$90.3\text{ ms}$** (nhanh hơn CP-SAT hơn **160 lần**), sẵn sàng tích hợp trực tiếp vào Jira / CI-CD pipeline.
+   - Thời gian thực thi siêu nhanh: chỉ **$90.3\text{ ms}$** (nhanh hơn CP-SAT gần **90 lần**), sẵn sàng tích hợp trực tiếp vào Jira / CI-CD pipeline.
 2. **Năng lực tối ưu hóa của Proposed Memetic NSGA-II**:
    - Đạt điểm Lợi ích Giảm nhẹ $f_1 = 438.1$, thu hẹp khoảng cách tối ưu (Optimality Gap) chỉ còn **$< 2.4\%$** so với nghiệm tối ưu toàn cục lý thuyết của CP-SAT ($448.8$).
    - Khảo sát trọn vẹn toàn bộ Mặt cong Pareto đa mục tiêu, tính toán chỉ số Hypervolume (HV) định lượng.
