@@ -84,26 +84,40 @@ Toàn bộ hệ thống được tái cấu trúc thành 3 tầng độc lập h
 
 ---
 
-## 3. Kết Quả Thực Nghiệm Đối Sánh (Scenario 1 — Small 40 Tasks)
+## 3. Kết Quả Thực Nghiệm Đối Sánh Đa Kịch Bản (Benchmark Results)
 
-Thực nghiệm được thực hiện trên **5 instances độc lập** bốc ngẫu nhiên từ kho 2.103 task thực tế, lặp lại **5 random seeds** (tổng cộng 40 lượt chạy đo lường):
+Bộ thực nghiệm được thực hiện trên **3 kịch bản chuẩn hóa quy mô** (Small 40, Medium 100, Large 500 tasks), mỗi kịch bản gồm **5 instances độc lập** từ kho 2.103 vulnerabilities thực tế, lặp lại **5 random seeds** cho thuật toán tiến hóa (tổng cộng 120 lượt chạy đo lường):
 
-| Kịch bản | Giải thuật (Solver) | Số lượt chạy | Lợi ích Rủi ro f1 (Mean ± Std) | Tăng f1 vs Greedy (%) | Chi phí Đổi Ngữ cảnh f2 (Mean ± Std) | Giảm f2 vs Greedy (%) | Hypervolume (HV) (Mean ± Std) | Vi phạm DAG | Thời gian Thực thi (ms) |
+| Kịch Bản | Giải Thuật (Solver) | Số Lượt Chạy | Lợi Ích Rủi Ro f1 (Mean ± Std) | Tăng f1 vs Greedy (%) | Chi Phí Đổi Ngữ Cảnh f2 (Mean ± Std) | Giảm f2 vs Greedy (%) | Hypervolume (HV) (Mean ± Std) | Vi Phạm DAG | Thời Gian Chạy (ms) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **small_40** | **Greedy-CVSS** *(Industry)* | 5 | 406.5 ± 213.5 | Baseline (0.0%) | 5.02 ± 1.19 | Baseline (0.0%) | 3,954.3 ± 1,906.3 | **0** | **0.2 ms** |
-| **small_40** | **OR-Tools CP-SAT** *(Exact Bound)* | 5 | **448.8 ± 197.3** | **+10.4%** | 3.66 ± 0.34 | +27.1% | 5,105.6 ± 2,305.9 | **0** | 15,161.6 ms |
-| **small_40** | **Proposed-CSM** *(Matheuristic)* | 5 | 410.9 ± 170.2 | +1.1% | **2.68 ± 0.65** | **+46.6%** | 5,008.4 ± 1,975.8 | **0** | **172.7 ms** |
-| **small_40** | **Proposed NSGA-II** *(Metaheuristic)* | 25 | 438.1 ± 197.4 | +7.8% | 4.67 ± 0.85 | +7.0% | **5,535.2 ± 2,550.3** | **0** | 2,147.6 ms |
+| **small_40** *(2 teams)* | **Greedy-CVSS** *(Industry)* | 5 | 406.5 ± 213.5 | Baseline (0.0%) | 5.02 ± 1.19 | Baseline (0.0%) | 3,954.3 ± 1,906.3 | **0** | **0.2 ms** |
+| | **OR-Tools CP-SAT** *(Exact Bound)* | 5 | **448.7 ± 197.3** | **+10.4%** | 3.64 ± 0.38 | +27.5% | 5,122.1 ± 2,342.4 | **0** | 15,174.0 ms |
+| | **Proposed-CSM** *(Matheuristic)* | 5 | 410.9 ± 170.2 | +1.1% | **2.68 ± 0.65** | **+46.6%** | 5,008.4 ± 1,975.8 | **0** | **176.7 ms** |
+| | **Proposed NSGA-II** *(Metaheuristic)* | 25 | 438.1 ± 197.4 | +7.8% | 4.67 ± 0.85 | +7.0% | **5,535.2 ± 2,550.3** | **0** | 2,140.4 ms |
+| **medium_100** *(4 teams)* | **Greedy-CVSS** *(Industry)* | 5 | 1167.4 ± 609.2 | Baseline (0.0%) | 7.50 ± 0.87 | Baseline (0.0%) | 26,500.8 ± 14,027.7 | **0** | **0.5 ms** |
+| | **OR-Tools CP-SAT** *(Exact Bound)* | 5 | 647.8 ± 395.5 | -44.5% (T.O.) | 10.16 ± 5.32 | -35.5% | 11,165.1 ± 3,853.1 | **0** | 31,812.2 ms |
+| | **Proposed-CSM** *(Matheuristic)* | 5 | 1098.8 ± 571.6 | -5.9% | **3.38 ± 1.10** | **+54.9%** | **29,271.5 ± 15,789.0** | **0** | **2,372.5 ms** |
+| | **Proposed NSGA-II** *(Metaheuristic)* | 25 | 1084.3 ± 497.4 | -7.1% | 11.54 ± 2.13 | -53.9% | 23,527.8 ± 10,043.0 | **0** | 4,807.5 ms |
+| **large_500** *(8 teams)* | **Greedy-CVSS** *(Industry)* | 5 | **3064.6 ± 801.5** | Baseline (0.0%) | 17.18 ± 0.83 | Baseline (0.0%) | 130,758.5 ± 31,994.9 | **0** | **2.8 ms** |
+| | **OR-Tools CP-SAT** *(Exact Bound)* | 5 | 0.0 ± 0.0 | N/A (Timeout) | 0.00 ± 0.00 | N/A (Timeout) | 0.0 ± 0.0 | 0 | 117,040.4 ms |
+| | **Proposed-CSM** *(Matheuristic)* | 5 | 2603.9 ± 474.9 | -15.0% | **8.46 ± 1.06** | **+50.8%** | **134,027.8 ± 24,005.1** | **0** | **7,218.0 ms** |
+| | **Proposed NSGA-II** *(Metaheuristic)* | 25 | 1724.2 ± 270.5 | -43.7% | 31.36 ± 4.78 | -82.5% | 63,157.4 ± 8,165.3 | **0** | 12,957.4 ms |
 
 ### Nhận Xét Khoa Học Cốt Lõi:
-1. **Hiệu năng vượt trội của Proposed-CSM (Cluster-Simulate-Match)**:
-   - Giảm tới **$46.6\%$ chi phí chuyển đổi ngữ cảnh** so với tiêu chuẩn công nghiệp (Greedy-CVSS) ($2.68$ vs $5.02$).
-   - Thời gian thực thi siêu nhanh: chỉ **$90.3\text{ ms}$** (nhanh hơn CP-SAT gần **90 lần**), sẵn sàng tích hợp trực tiếp vào Jira / CI-CD pipeline.
-2. **Năng lực tối ưu hóa của Proposed Memetic NSGA-II**:
-   - Đạt điểm Lợi ích Giảm nhẹ $f_1 = 438.1$, thu hẹp khoảng cách tối ưu (Optimality Gap) chỉ còn **$< 2.4\%$** so với nghiệm tối ưu toàn cục lý thuyết của CP-SAT ($448.8$).
-   - Khảo sát trọn vẹn toàn bộ Mặt cong Pareto đa mục tiêu, tính toán chỉ số Hypervolume (HV) định lượng.
-3. **Toàn vẹn ràng buộc toán học**:
-   - $100\%$ các phương án sinh ra bởi cả 4 thuật toán đều đạt **0 DAG violations**, thỏa mãn tuyệt đối các ràng buộc dung lượng Story Points và ngưỡng năng lực $\ge 0.5$.
+1. **Khả năng mở rộng vượt bậc của Proposed-CSM Matheuristic**:
+   - **Triệt tiêu chi phí đổi ngữ cảnh (f2)** đồng nhất trên mọi quy mô: Giảm tới **46.6%** ở Small, **54.9%** ở Medium, và **50.8%** ở Large so với Greedy công nghiệp.
+   - **Đạt Hypervolume cao nhất ở cả Medium (29,271.5) và Large (134,027.8)**, chứng minh sự ổn định vượt bậc khi bài toán phình to về số task và số team.
+   - Thời gian thực thi cực nhanh: Chỉ 176ms (Small), 2.3s (Medium), và 7.2s (Large 500 tasks), giải quyết bài toán mà solver toán học CP-SAT hoàn toàn bất lực.
+2. **Điểm nghẽn bùng nổ tổ hợp của Solver Toán học CP-SAT**:
+   - Giải tối ưu ở Small 40 ( = 448.7$).
+   - Bị nghẽn nặng ở Medium 100 do không gian 40.000 biến nhị phân, chỉ tìm được nghiệm non ( = 647.8$).
+   - Hoàn toàn quá tải ở Large 500 tasks (2.000.000 biến nhị phân), mất 117s mà không tìm được bất kỳ nghiệm khả thi nào.
+3. **Bài học về Metaheuristic NSGA-II trên không gian hoán vị lớn**:
+   - Hoạt động xuất sắc ở quy mô nhỏ (Small 40 tasks), đạt Hypervolume cao nhất (,535.2$).
+   - Khi bài toán tăng lên 500 tasks (không gian hoán vị 00!$), toán tử lai ghép toàn cục OX và đột biến phân tán khiến NSGA-II khó hội tụ trong số thế hệ hữu hạn. Đây là luận điểm khoa học mạnh mẽ để mở rộng hướng nghiên cứu tương lai sang **Adaptive Large Neighborhood Search (ALNS)**.
+4. **Toàn vẹn ràng buộc toán học**:
+   - 00\%$ các phương án sinh ra bởi các thuật toán khả thi đều đạt **0 DAG violations**, thỏa mãn tuyệt đối các ràng buộc dung lượng Story Points và ngưỡng năng lực >= 0.5.
+
 
 ---
 
