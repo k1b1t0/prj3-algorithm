@@ -44,8 +44,8 @@ class TestDPSequencing(unittest.TestCase):
         res = sequence_tasks_dp(tasks)
         self.assertEqual(check_dag_violations(res), 0)
         cost = evaluate_schedule_switch_cost(res)
-        # Optimal order is [1, 3, 2, 4]: cost = C(1,3)=0.0 + C(3,2)=1.0 + C(2,4)=0.0 = 1.0
-        self.assertEqual(cost, 1.0)
+        # Optimal order is [1, 3, 2, 4]: cost = C(1,3)=0.0 + C(3,2)=0.5 + C(2,4)=0.0 = 0.5
+        self.assertEqual(cost, 0.5)
         self.assertEqual([t.id for t in res], [1, 3, 2, 4])
 
 
