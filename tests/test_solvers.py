@@ -74,6 +74,24 @@ class TestSolvers(unittest.TestCase):
         self.assertEqual(plan.dag_violations, 0)
         self.assertGreater(plan.total_utility_resolved, 0.0)
 
+    def test_gurobi_solver(self):
+        from solvers.gurobi_exact import GurobiExactSolver
+        solver = GurobiExactSolver(time_limit_sec=5.0)
+        self.assertIsInstance(solver, BaseSolver)
+        plan = solver.solve(self.tasks, self.teams, current_sprint=4)
+        self.assertEqual(plan.dag_violations, 0)
+        self.assertGreater(plan.total_utility_resolved, 0.0)
+
+    def test_nsga2_solver(self):
+        from solvers.proposed_nsga2.solver import ProposedNSGA2Solver
+        solver = ProposedNSGA2Solver(pop_size=10, generations=5, random_seed=42)
+        self.assertIsInstance(solver, BaseSolver)
+        plan = solver.solve(self.tasks, self.teams, current_sprint=4)
+        self.assertEqual(plan.dag_violations, 0)
+        self.assertGreater(plan.total_utility_resolved, 0.0)
+        self.assertTrue(hasattr(plan, "pareto_front"))
+        self.assertTrue(hasattr(plan, "hypervolume"))
+
     def test_hypervolume(self):
         pts = [(60.0, 3.0), (80.0, 6.0), (95.0, 10.0)]
         front = extract_pareto_front(pts)
