@@ -52,7 +52,7 @@ class GreedyCVSSSolver(BaseSolver):
                     task_to_team[task.id] = tm.team_id
                     break
 
-        # Đóng gói ScheduleResult cho từng team
+        # Dong goi ScheduleResult cho tung team
         schedules: List[ScheduleResult] = []
         for tm in teams:
             assigned = team_assigned[tm.team_id]
@@ -83,6 +83,6 @@ def solve_greedy_cvss(
     current_sprint: int = 4,
     use_utility: bool = True
 ) -> SprintPlan:
-    """Hàm wrapper cho backward compatibility."""
+    """Ham wrapper cho backward compatibility."""
     solver = GreedyCVSSSolver(skill_threshold=skill_threshold, use_utility=use_utility)
     return solver.solve(tasks, teams, current_sprint=current_sprint)

@@ -14,8 +14,8 @@ def cluster_tasks(
     w_skill: float = 0.2
 ) -> List[List[Task]]:
     """
-    Gom cụm lỗ hổng bằng Spectral Clustering dựa trên ma trận tương đồng A_ij có xét DAG boost.
-    Gom thành n_clusters cụm (tương ứng với số lượng teams).
+    Gom cum lo hong bang Spectral Clustering dua tren ma tran tuong dong A_ij.
+    Gom thanh n_clusters cum (tuong ung so luong teams).
     """
     if n_clusters <= 1 or len(tasks) <= n_clusters:
         return [tasks] if n_clusters <= 1 else [[t] for t in tasks]

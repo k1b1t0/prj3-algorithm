@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from models import Task, Team
-from proposed.trimmer import trim_cluster_for_team
+from solvers.proposed_4phase.trimmer import trim_cluster_for_team
 from metrics import check_dag_violations
 
 
@@ -39,14 +39,13 @@ class TestTrimmer(unittest.TestCase):
         self.assertEqual([t.id for t in retained], [2])
         self.assertEqual([t.id for t in deferred], [1])
 
-    def test_leaf_pruning_capacity(self):
+    def test_capacity_knapsack_trimming(self):
         # Total effort: 4 + 4 + 4 = 12 > capacity 10
-        # DAG: 1 -> 2 -> 3
-        # Task 3 has lowest r/e ratio (1.0 vs 2.0 vs 2.0) and is a leaf (out-degree 0)
+        # Task 1 & 2 have higher utility density than Task 3
         tasks = [
             Task(id=1, title="T1", repository="r1", asset_module="m1", r_i=8.0, e_i=4, skill="SKILL_A01"),
-            Task(id=2, title="T2", repository="r1", asset_module="m1", r_i=8.0, e_i=4, skill="SKILL_A01", predecessors=[1]),
-            Task(id=3, title="T3", repository="r1", asset_module="m1", r_i=4.0, e_i=4, skill="SKILL_A01", predecessors=[2])
+            Task(id=2, title="T2", repository="r1", asset_module="m1", r_i=8.0, e_i=4, skill="SKILL_A01"),
+            Task(id=3, title="T3", repository="r1", asset_module="m1", r_i=4.0, e_i=4, skill="SKILL_A01")
         ]
         retained, deferred = trim_cluster_for_team(tasks, self.team)
         self.assertEqual([t.id for t in retained], [1, 2])

@@ -7,16 +7,13 @@ from metrics import compute_context_distance
 def build_affinity_matrix(
     tasks: List[Task],
     sigma: float = 0.5,
-    dag_boost: float = 1.0,
     w_repo: float = 0.5,
     w_mod: float = 0.3,
     w_skill: float = 0.2
 ) -> np.ndarray:
     """
-    Xây dựng ma trận tương đồng A_ij giữa các task:
+    Xay dung ma tran tuong dong A_ij dua tren khoang cach ngu canh C_ij:
     A_ij = exp(-C_ij^2 / (2 * sigma^2))
-    Nếu u và v có quan hệ DAG phụ thuộc trực tiếp (u -> v hoặc v -> u),
-    tăng mạnh độ tương đồng bằng dag_boost để ép vào cùng 1 cụm.
     """
     n = len(tasks)
     A = np.zeros((n, n), dtype=float)

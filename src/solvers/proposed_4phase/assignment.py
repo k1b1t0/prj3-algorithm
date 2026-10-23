@@ -6,8 +6,8 @@ from models import Task, Team
 
 def assign_clusters_to_teams(clusters: List[List[Task]], teams: List[Team]) -> List[Tuple[Team, List[Task]]]:
     """
-    Gán n_clusters cho n_teams sử dụng thuật toán Hungarian (linear_sum_assignment).
-    Tối đa hóa tổng điểm phù hợp kỹ năng trung bình.
+    Gan n_clusters cho n_teams su dung thuat toan Hungarian (linear_sum_assignment).
+    Toi da hoa tong diem phu hop ky nang trung binh.
     """
     n_c = len(clusters)
     n_t = len(teams)

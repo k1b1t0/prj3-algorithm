@@ -11,22 +11,21 @@ def trim_cluster_for_team(
     m_penalty: float = 50.0
 ) -> Tuple[List[Task], List[Task]]:
     """
-    Làm gọn cụm công việc cho team (No-DAG Knapsack Selection):
-    1. Lọc cứng kỹ năng: Nếu điểm kỹ năng < skill_threshold, đưa sang deferred.
-    2. Greedy Knapsack Selection: Sắp xếp các task đủ điều kiện theo mật độ rủi ro (u_i / e_i)
-       giảm dần. Lần lượt nhặt các task có hiệu quả cao nhất vào Sprint cho đến khi chạm trần dung lượng.
+    Loc va chon loc task cho team (Knapsack 0-1 theo mat do u_i / e_i):
+    1. Loc ky nang: k_{t, skill} >= skill_threshold.
+    2. Knapsack: sap xep giam dan theo u_i / e_i, nhat den tran dung luong cap_t.
     """
     deferred: List[Task] = []
     valid_tasks: List[Task] = []
 
-    # Bước 1: Lọc theo ngưỡng kỹ năng
+    # 1. Loc theo nguong ky nang
     for t in cluster_tasks:
         if team.get_skill_score(t.skill) >= skill_threshold:
             valid_tasks.append(t)
         else:
             deferred.append(t)
 
-    # Bước 2: Sắp xếp theo tỷ số utility / effort giảm dần
+    # 2. Sap xep theo mat do utility / effort
     valid_tasks.sort(
         key=lambda t: t.compute_utility(current_sprint, alpha, m_penalty) / max(1, t.e_i),
         reverse=True

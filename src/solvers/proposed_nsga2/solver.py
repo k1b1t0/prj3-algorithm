@@ -1,10 +1,10 @@
 """
 Proposed Metaheuristic: Memetic NSGA-II (Non-dominated Sorting Genetic Algorithm II).
-Thiết kế theo draft-nsga.md:
-- Mã hóa 2 phần: Topo Priority List & Team Assignment Vector.
-- Giải mã Topo đảm bảo 100% khả thi và không vi phạm DAG.
-- Tinh chỉnh chuỗi nội bộ từng team bằng Bitmask DP (Memetic Local Search).
-- Khảo sát toàn diện Mặt cong Pareto (Pareto Frontier) và chỉ số Hypervolume (HV).
+Thiet ke theo draft-nsga.md:
+- Ma hoa 2 phan: Priority List & Team Assignment Vector.
+- Giai ma uu tien dam bao 100% kha thi ve capacity va skill.
+- Tinh chinh chuoi noi bo tung team bang Bitmask DP (Memetic Local Search).
+- Khao sat toan dien Mat cong Pareto (Pareto Frontier) va chi so Hypervolume (HV).
 """
 import copy
 import random
@@ -74,7 +74,7 @@ class ProposedNSGA2Solver(BaseSolver):
             ]
             return evaluate_sprint_plan(tasks, empty_schedules, teams_dict, current_sprint=current_sprint)
 
-        # 1. Khởi tạo quần thể ban đầu P_0
+        # 1. Khoi tao quan the ban dau P_0
         population = create_initial_population(
             tasks=tasks,
             teams=teams,
@@ -83,7 +83,7 @@ class ProposedNSGA2Solver(BaseSolver):
             skill_threshold=skill_thresh
         )
 
-        # Đánh giá quần thể P_0
+        # Danh gia quan the P_0
         for chrom in population:
             decode_chromosome(
                 chrom=chrom,
@@ -91,14 +91,14 @@ class ProposedNSGA2Solver(BaseSolver):
                 teams=teams,
                 current_sprint=current_sprint,
                 skill_threshold=skill_thresh,
-                apply_memetic_dp=False  # Đánh giá nhanh trong quần thể đầu
+                apply_memetic_dp=False  # Danh gia nhanh trong quan the dau
             )
 
         fronts = fast_non_dominated_sort(population)
         for front in fronts:
             calculate_crowding_distance(front)
 
-        # 2. Vòng lặp tiến hóa qua các thế hệ
+        # 2. Vong lap tien hoa qua cac the he
         for gen in range(n_gens):
             offspring: List[Chromosome] = []
 
@@ -119,7 +119,7 @@ class ProposedNSGA2Solver(BaseSolver):
                 mutate_chromosome(c1, tasks, teams, rng, mut_prob, skill_thresh)
                 mutate_chromosome(c2, tasks, teams, rng, mut_prob, skill_thresh)
 
-                # Giải mã con
+                # Giai ma con
                 decode_chromosome(c1, tasks, teams, current_sprint, skill_thresh, apply_memetic_dp=False)
                 decode_chromosome(c2, tasks, teams, current_sprint, skill_thresh, apply_memetic_dp=False)
 
@@ -127,18 +127,18 @@ class ProposedNSGA2Solver(BaseSolver):
                 if len(offspring) < pop_sz:
                     offspring.append(c2)
 
-            # Kết hợp R_t = P_t + Q_t
+                # Ket hop R_t = P_t + Q_t
             combined = population + offspring
             fronts = fast_non_dominated_sort(combined)
 
-            # Chọn lọc thế hệ kế tiếp P_{t+1}
+            # Chon loc the he ke tiep P_{t+1}
             new_pop: List[Chromosome] = []
             for front in fronts:
                 calculate_crowding_distance(front)
                 if len(new_pop) + len(front) <= pop_sz:
                     new_pop.extend(front)
                 else:
-                    # Lấy thêm các cá thể có khoảng cách tập trung lớn nhất
+                    # Lay them cac ca the co khoang cach tap trung lon nhat
                     remaining_slots = pop_sz - len(new_pop)
                     front.sort(key=lambda ind: ind.crowding_dist, reverse=True)
                     new_pop.extend(front[:remaining_slots])
@@ -146,11 +146,11 @@ class ProposedNSGA2Solver(BaseSolver):
 
             population = new_pop
 
-        # 3. Trích xuất Mặt Pareto cuối cùng (Front 0)
+        # 3. Trich xuat Mat Pareto cuoi cung (Front 0)
         final_fronts = fast_non_dominated_sort(population)
         pareto_chromosomes = final_fronts[0]
 
-        # Áp dụng Memetic Local Search hoàn chỉnh cho các cá thể trên Pareto Front
+        # Ap dung Memetic Local Search hoan chinh cho cac ca the tren Pareto Front
         for chrom in pareto_chromosomes:
             decode_chromosome(
                 chrom=chrom,
@@ -158,18 +158,18 @@ class ProposedNSGA2Solver(BaseSolver):
                 teams=teams,
                 current_sprint=current_sprint,
                 skill_threshold=skill_thresh,
-                apply_memetic_dp=True  # Bật Bitmask DP để tinh chỉnh chuỗi
+                apply_memetic_dp=True  # Bat Bitmask DP de tinh chinh chuoi
             )
 
-        # Lọc lại tập nghiệm không bị thống trị sau khi làm mịn bằng DP
+        # Loc lai tap nghiem khong bi thong tri sau khi lam min bang DP
         raw_pareto_points = [chrom.objectives for chrom in pareto_chromosomes]
         pareto_front = extract_pareto_front(raw_pareto_points)
 
-        # Tính toán Hypervolume (HV) với Reference Point chuẩn hóa
+        # Tinh toan Hypervolume (HV) voi Reference Point chuan hoa
         ref_point = kwargs.get("ref_point", (0.0, 15.0))
         hv = compute_hypervolume(pareto_front, ref_point=ref_point)
 
-        # Chọn nghiệm đại diện (Compromise Solution) tối đa hóa Z = f1 - lambda * f2
+        # Chon nghiem dai dien (Compromise Solution) toi da hoa Z = f1 - lambda * f2
         best_chrom = max(
             pareto_chromosomes,
             key=lambda c: c.objectives[0] - lambda_val * c.objectives[1]
@@ -181,7 +181,7 @@ class ProposedNSGA2Solver(BaseSolver):
         plan.solver_name = self.name
         plan.execution_time_ms = exec_time_ms
 
-        # Gắn kèm metadata Pareto & Hypervolume vào SprintPlan
+        # Gan kem metadata Pareto & Hypervolume vao SprintPlan
         setattr(plan, "pareto_front", pareto_front)
         setattr(plan, "hypervolume", hv)
         setattr(plan, "ref_point", ref_point)

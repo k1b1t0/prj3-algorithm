@@ -1,80 +1,22 @@
 import random
-from typing import List, Dict, Set, Tuple
-from collections import defaultdict, deque
+from typing import List, Dict, Tuple
+from collections import defaultdict
 from models import Task, Team
 from solvers.proposed_nsga2.chromosome import Chromosome
 
 
 def topological_repair(order: List[int], tasks: List[Task]) -> List[int]:
     """
-    Sắp xếp lại danh sách order theo đúng thứ tự Topo DAG bằng giải thuật Kahn,
-    ưu tiên thứ tự xuất hiện gốc trong order (giữ trọn vẹn đặc tính của phép lai ghép).
+    Ham giu lai cho backward-compatibility.
+    Trong bai toan No-DAG, moi hoan vi deu hop le.
     """
-    id_to_task = {t.id: t for t in tasks}
-    in_degrees = {t.id: 0 for t in tasks}
-    adj = defaultdict(list)
-    has_edges = False
-
-    for t in tasks:
-        for p in t.predecessors:
-            if p in id_to_task:
-                adj[p].append(t.id)
-                in_degrees[t.id] += 1
-                has_edges = True
-
-    # No-DAG fast path: không có ràng buộc thứ tự nào, mọi hoán vị đều hợp lệ
-    if not has_edges:
-        return list(order)
-
-    pos_in_order = {tid: idx for idx, tid in enumerate(order)}
-    ready = [tid for tid, deg in in_degrees.items() if deg == 0]
-    ready.sort(key=lambda tid: pos_in_order.get(tid, 0))
-
-    sorted_order = []
-    while ready:
-        curr = ready.pop(0)
-        sorted_order.append(curr)
-        for nxt in adj[curr]:
-            in_degrees[nxt] -= 1
-            if in_degrees[nxt] == 0:
-                ready.append(nxt)
-                ready.sort(key=lambda tid: pos_in_order.get(tid, 0))
-
-    return sorted_order
+    return list(order)
 
 
 def generate_random_topological_sort(tasks: List[Task], rng: random.Random) -> List[int]:
-    """Sinh ngẫu nhiên một thứ tự Topo hợp lệ của DAG."""
-    id_to_task = {t.id: t for t in tasks}
-    in_degrees = {t.id: 0 for t in tasks}
-    adj = defaultdict(list)
-    has_edges = False
-
-    for t in tasks:
-        for p in t.predecessors:
-            if p in id_to_task:
-                adj[p].append(t.id)
-                in_degrees[t.id] += 1
-                has_edges = True
-
-    # No-DAG fast path: hoán vị ngẫu nhiên toàn bộ task ID
-    if not has_edges:
-        order = [t.id for t in tasks]
-        rng.shuffle(order)
-        return order
-
-    ready = [t.id for t in tasks if in_degrees[t.id] == 0]
-    order = []
-
-    while ready:
-        idx = rng.randrange(len(ready))
-        curr = ready.pop(idx)
-        order.append(curr)
-        for nxt in adj[curr]:
-            in_degrees[nxt] -= 1
-            if in_degrees[nxt] == 0:
-                ready.append(nxt)
-
+    """Sinh ngau nhien mot hoan vi thu tu uu tien cua cac task."""
+    order = [t.id for t in tasks]
+    rng.shuffle(order)
     return order
 
 
@@ -85,21 +27,20 @@ def create_initial_population(
     rng: random.Random,
     skill_threshold: float = 0.5
 ) -> List[Chromosome]:
-    """Khởi tạo quần thể ban đầu với đa dạng nghiệm."""
+    """Khoi tao quan the ban dau voi da dang nghiem."""
     population = []
-    num_teams = len(teams)
 
     for _ in range(pop_size):
         priority = generate_random_topological_sort(tasks, rng)
         assignment = {}
         for t in tasks:
-            # Tìm danh sách các team đủ kỹ năng
+            # Tim danh sach cac team du ky nang
             capable = [i + 1 for i, tm in enumerate(teams) if tm.get_skill_score(t.skill) >= skill_threshold]
             if capable and rng.random() < 0.85:
-                # 85% khả năng gán cho 1 team đủ kỹ năng
+                # 85% kha nang gan cho 1 team du ky nang
                 assignment[t.id] = rng.choice(capable)
             else:
-                # 15% khả năng gán cho 0 (hoãn sang sprint sau)
+                # 15% kha nang gan cho 0 (hoan sang sprint sau)
                 assignment[t.id] = 0
 
         population.append(Chromosome(priority=priority, assignment=assignment))
@@ -113,7 +54,7 @@ def order_crossover(
     tasks: List[Task],
     rng: random.Random
 ) -> Tuple[List[int], List[int]]:
-    """Toán tử Lai ghép Thứ tự (Order Crossover - OX) kèm Topological Repair."""
+    """Toan tu Lai ghep Thu tu (Order Crossover - OX)."""
     size = len(p1)
     if size <= 2:
         return list(p1), list(p2)
@@ -126,7 +67,7 @@ def order_crossover(
         child[cx1:cx2 + 1] = parent_a[cx1:cx2 + 1]
         copied_set = set(parent_a[cx1:cx2 + 1])
 
-        # Điền các vị trí còn lại từ parent_b
+        # Dien cac vi tri con lai tu parent_b
         fill_vals = [item for item in parent_b if item not in copied_set]
         fill_idx = 0
         for i in range(size):
@@ -138,11 +79,8 @@ def order_crossover(
                     child[i] = parent_a[i]
         return child
 
-    c1_raw = ox(p1, p2)
-    c2_raw = ox(p2, p1)
-
-    c1 = topological_repair(c1_raw, tasks)
-    c2 = topological_repair(c2_raw, tasks)
+    c1 = ox(p1, p2)
+    c2 = ox(p2, p1)
     return c1, c2
 
 
@@ -151,7 +89,7 @@ def crossover_assignment(
     a2: Dict[int, int],
     rng: random.Random
 ) -> Tuple[Dict[int, int], Dict[int, int]]:
-    """Lai ghép đồng đều (Uniform Crossover) trên vector chỉ định team."""
+    """Lai ghep dong deu (Uniform Crossover) tren vector chi dinh team."""
     c1, c2 = {}, {}
     for k in a1.keys():
         if rng.random() < 0.5:
@@ -171,10 +109,8 @@ def mutate_chromosome(
     mutation_rate: float = 0.2,
     skill_threshold: float = 0.5
 ):
-    """Toán tử Đột biến Thích ứng (Adaptive Mutation): Đổi Team & Hoán đổi Topo."""
-    num_teams = len(teams)
-
-    # 1. Đột biến Đổi Team
+    """Toan tu Dot bien Thich ung (Adaptive Mutation): Doi Team va Hoan doi thu tu."""
+    # 1. Dot bien Doi Team
     for t in tasks:
         if rng.random() < mutation_rate:
             capable = [i + 1 for i, tm in enumerate(teams) if tm.get_skill_score(t.skill) >= skill_threshold]
@@ -183,16 +119,15 @@ def mutate_chromosome(
             else:
                 chrom.assignment[t.id] = 0
 
-    # 2. Đột biến Đổi chỗ Topo (Swap Mutation)
+    # 2. Dot bien Hoan doi thu tu (Swap Mutation)
     if len(chrom.priority) > 2 and rng.random() < mutation_rate:
         idx1 = rng.randrange(len(chrom.priority))
         idx2 = rng.randrange(len(chrom.priority))
         chrom.priority[idx1], chrom.priority[idx2] = chrom.priority[idx2], chrom.priority[idx1]
-        chrom.priority = topological_repair(chrom.priority, tasks)
 
 
 def fast_non_dominated_sort(population: List[Chromosome]) -> List[List[Chromosome]]:
-    """Thuật toán Sắp xếp Không bị thống trị nhanh (Fast Non-dominated Sort của Deb et al.)."""
+    """Thuat toan Sap xep Khong bi thong tri nhanh (Fast Non-dominated Sort cua Deb et al.)."""
     front_indices: List[List[int]] = [[]]
     S: Dict[int, List[int]] = defaultdict(list)
     n = [0] * len(population)
@@ -227,7 +162,7 @@ def fast_non_dominated_sort(population: List[Chromosome]) -> List[List[Chromosom
 
 
 def calculate_crowding_distance(front: List[Chromosome]):
-    """Gán khoảng cách tập trung (Crowding Distance) cho các cá thể trong cùng một Front."""
+    """Gan khoang cach tap trung (Crowding Distance) cho cac ca the trong cung mot Front."""
     l = len(front)
     if l == 0:
         return
@@ -239,7 +174,7 @@ def calculate_crowding_distance(front: List[Chromosome]):
             ind.crowding_dist = float("inf")
         return
 
-    # Mục tiêu 1: f1 (Utility - Maximize)
+    # Muc tieu 1: f1 (Utility - Maximize)
     front.sort(key=lambda ind: ind.objectives[0])
     front[0].crowding_dist = float("inf")
     front[-1].crowding_dist = float("inf")
@@ -250,7 +185,7 @@ def calculate_crowding_distance(front: List[Chromosome]):
     for i in range(1, l - 1):
         front[i].crowding_dist += (front[i + 1].objectives[0] - front[i - 1].objectives[0]) / f1_range
 
-    # Mục tiêu 2: f2 (Switch Cost - Minimize)
+    # Muc tieu 2: f2 (Switch Cost - Minimize)
     front.sort(key=lambda ind: ind.objectives[1])
     front[0].crowding_dist = float("inf")
     front[-1].crowding_dist = float("inf")
@@ -263,7 +198,7 @@ def calculate_crowding_distance(front: List[Chromosome]):
 
 
 def tournament_select(population: List[Chromosome], rng: random.Random) -> Chromosome:
-    """Chọn lọc Tournament nhị phân dựa trên (Rank, Crowding Distance)."""
+    """Chon loc Tournament nhi phan dua tren (Rank, Crowding Distance)."""
     cand1 = rng.choice(population)
     cand2 = rng.choice(population)
 

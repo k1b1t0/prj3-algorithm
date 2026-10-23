@@ -11,9 +11,9 @@ def compute_context_distance(
     w_skill: float = 0.2
 ) -> float:
     """
-    Khoảng cách chuyển đổi ngữ cảnh giữa 2 task: C_ij in [0, 1]
+    Khoang cach chuyen doi ngu canh giua 2 task: C_ij in [0, 1]
     C_ij = w_repo * I(repo_a != repo_b) + w_mod * I(mod_a != mod_b) + w_skill * I(skill_a != skill_b)
-    C_ij = 0 khi và chỉ khi cùng Repo, cùng Module và cùng nhóm Skill.
+    C_ij = 0 khi va chi khi cung Repo, cung Module va cung nhom Skill.
     """
     if task_a.id == task_b.id:
         return 0.0
@@ -30,7 +30,7 @@ def compute_mitigation_utility(
     m_penalty: float = 50.0
 ) -> float:
     """
-    Điểm Lợi ích Giảm nhẹ Rủi ro (Mitigation Utility - u_i):
+    Diem Loi ich Giam nhe Rui ro (Mitigation Utility - u_i):
     u_i = r_i + alpha * max(0, tau - disc_i) + M_penalty * I(tau >= dead_i)
     """
     return task.compute_utility(current_sprint=current_sprint, alpha=alpha, m_penalty=m_penalty)
@@ -42,7 +42,7 @@ def evaluate_schedule_switch_cost(
     w_mod: float = 0.3,
     w_skill: float = 0.2
 ) -> float:
-    """Tính tổng chi phí chuyển đổi ngữ cảnh trên chuỗi task: sum C_{pi_k, pi_{k+1}}"""
+    """Tinh tong chi phi chuyen doi ngu canh tren chuoi task: sum C_{pi_k, pi_{k+1}}"""
     if len(tasks) <= 1:
         return 0.0
     cost = 0.0
@@ -140,20 +140,20 @@ def evaluate_sprint_plan(
 
 def extract_pareto_front(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
     """
-    Trích xuất mặt Pareto không bị thống trị (Non-dominated Pareto Front).
-    Mục tiêu: Maximize f1 (Utility), Minimize f2 (Switch Cost).
-    Trả về danh sách các điểm (f1, f2) được sắp xếp tăng dần theo f1 (và f2 cũng tăng dần).
+    Trich xuat mat Pareto khong bi thong tri (Non-dominated Pareto Front).
+    Muc tieu: Maximize f1 (Utility), Minimize f2 (Switch Cost).
+    Tra ve danh sach cac diem (f1, f2) duoc sap xep tang dan theo f1.
     """
     if not points:
         return []
 
-    # Loại bỏ điểm trùng
+    # Loai bo diem trung
     unique_points = sorted(list(set(points)), key=lambda p: (p[0], -p[1]))
 
     pareto: List[Tuple[float, float]] = []
     for p in unique_points:
         f1_p, f2_p = p
-        # Điểm p bị thống trị nếu tồn tại q sao cho q[0] >= p[0] và q[1] <= p[1] với ít nhất 1 bất đẳng thức ngặt
+        # Diem p bi thong tri neu ton tai q sao cho q[0] >= p[0] va q[1] <= p[1] voi it nhat 1 bat dang thuc ngat
         dominated = False
         for q in unique_points:
             if (q[0] >= f1_p and q[1] <= f2_p) and (q[0] > f1_p or q[1] < f2_p):
@@ -162,7 +162,7 @@ def extract_pareto_front(points: List[Tuple[float, float]]) -> List[Tuple[float,
         if not dominated:
             pareto.append(p)
 
-    # Sắp xếp theo f1 tăng dần
+    # Sap xep theo f1 tang dan
     pareto.sort(key=lambda p: p[0])
     return pareto
 
@@ -172,10 +172,10 @@ def compute_hypervolume(
     ref_point: Tuple[float, float]
 ) -> float:
     """
-    Tính chỉ số Hypervolume (HV) 2 chiều cho mặt Pareto.
-    Mục tiêu: Maximize f1, Minimize f2.
-    ref_point = (f1_ref, f2_ref) với f1_ref <= min(f1), f2_ref >= max(f2).
-    Diện tích được giới hạn bởi Mặt Pareto và Điểm chuẩn ref_point.
+    Tinh chi so Hypervolume (HV) 2 chieu cho mat Pareto.
+    Muc tieu: Maximize f1, Minimize f2.
+    ref_point = (f1_ref, f2_ref) voi f1_ref <= min(f1), f2_ref >= max(f2).
+    Dien tich duoc gioi han boi Mat Pareto va Diem chuan ref_point.
     """
     front = extract_pareto_front(pareto_points)
     if not front:
@@ -183,12 +183,12 @@ def compute_hypervolume(
 
     f1_ref, f2_ref = ref_point
 
-    # Lọc các điểm tốt hơn ref_point
+    # Loc cac diem tot hon ref_point
     valid_points = [p for p in front if p[0] >= f1_ref and p[1] <= f2_ref]
     if not valid_points:
         return 0.0
 
-    # Sắp xếp tăng dần theo f1
+    # Sap xep tang dan theo f1
     valid_points.sort(key=lambda p: p[0])
 
     area = 0.0

@@ -14,10 +14,10 @@ def decode_chromosome(
     apply_memetic_dp: bool = True
 ) -> SprintPlan:
     """
-    Bộ giải mã Topo (Topological Decoder):
-    Duyệt tuần tự theo danh sách ưu tiên.
-    Đảm bảo 100% phương án sinh ra đều KHẢ THI (0 DAG violations, đúng capacity, đúng skill).
-    Thành phần Memetic: Tối ưu hóa chuỗi nội bộ từng team bằng sequence_tasks_dp.
+    Bo giai ma uu tien (Priority Decoder):
+    Duyet tuan tu theo danh sach uu tien.
+    Dam bao 100% phuong an sinh ra deu KHA THI (dung capacity, dung skill).
+    Thanh phan Memetic: Toi uu hoa chuoi noi bo tung team bang sequence_tasks_dp.
     """
     task_map = {t.id: t for t in tasks}
     teams_dict = {tm.team_id: tm for tm in teams}
@@ -33,36 +33,26 @@ def decode_chromosome(
         task = task_map[tid]
         t_idx = chrom.assignment.get(tid, 0)
 
-        # 0 nghĩa là hoãn sang sprint sau
+        # 0 nghia la hoan sang sprint sau
         if t_idx <= 0 or t_idx not in team_idx_map:
             continue
 
         team = team_idx_map[t_idx]
 
-        # 1. Kiểm tra kỹ năng team >= skill_threshold
+        # 1. Kiem tra ky nang team >= skill_threshold
         if team.get_skill_score(task.skill) < skill_threshold:
             continue
 
-        # 2. Kiểm tra dung lượng còn lại
+        # 2. Kiem tra dung luong con lai
         if remaining_cap[t_idx] < task.e_i:
             continue
 
-        # 3. Kiểm tra ràng buộc DAG: Toàn bộ task cha phải được nhận VÀ phải cùng thuộc team này (Intra-team)
-        parents_valid = True
-        for p in task.predecessors:
-            if p not in task_to_team or task_to_team[p] != t_idx:
-                parents_valid = False
-                break
-
-        if not parents_valid:
-            continue
-
-        # Thỏa mãn cả 3 điều kiện: Nhận task vào team
+        # Thoa man ca 2 dieu kien (skill va capacity): Nhan task vao team
         team_assigned[t_idx].append(task)
         remaining_cap[t_idx] -= task.e_i
         task_to_team[tid] = t_idx
 
-    # Sắp xếp chuỗi công việc cho từng team (Memetic Component)
+    # Sap xep chuoi cong viec cho tung team (Memetic Component)
     schedules: List[ScheduleResult] = []
     for t_idx, team in team_idx_map.items():
         assigned = team_assigned[t_idx]
