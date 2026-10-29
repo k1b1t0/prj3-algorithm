@@ -1,6 +1,7 @@
 import numpy as np
-from typing import List, Dict, Tuple, Set, Optional
+from typing import List, Dict, Tuple, Set, Optional, Any
 from models import Task, Team, ScheduleResult, SprintPlan
+from bounds import ObjectiveBounds, compute_static_bounds
 
 
 def compute_context_distance(
@@ -11,9 +12,9 @@ def compute_context_distance(
     w_skill: float = 0.2
 ) -> float:
     """
-    Khoang cach chuyen doi ngu canh giua 2 task: C_ij in [0, 1]
-    C_ij = w_repo * I(repo_a != repo_b) + w_mod * I(mod_a != mod_b) + w_skill * I(skill_a != skill_b)
-    C_ij = 0 khi va chi khi cung Repo, cung Module va cung nhom Skill.
+    Context switch distance between two tasks: C_ij in [0, 1].
+    C_ij = w_repo * I(repo_a != repo_b) + w_mod * I(mod_a != mod_b) + w_skill * I(skill_a != skill_b).
+    C_ij = 0 iff same Repo, same Module, and same Skill.
     """
     if task_a.id == task_b.id:
         return 0.0
@@ -29,10 +30,7 @@ def compute_mitigation_utility(
     alpha: float = 0.5,
     m_penalty: float = 50.0
 ) -> float:
-    """
-    Diem Loi ich Giam nhe Rui ro (Mitigation Utility - u_i):
-    u_i = r_i + alpha * max(0, tau - disc_i) + M_penalty * I(tau >= dead_i)
-    """
+    """Dynamic Mitigation Utility u_i."""
     return task.compute_utility(current_sprint=current_sprint, alpha=alpha, m_penalty=m_penalty)
 
 
@@ -42,7 +40,7 @@ def evaluate_schedule_switch_cost(
     w_mod: float = 0.3,
     w_skill: float = 0.2
 ) -> float:
-    """Tinh tong chi phi chuyen doi ngu canh tren chuoi task: sum C_{pi_k, pi_{k+1}}"""
+    """Compute total context switch cost on a sequence of tasks: sum C_{pi_k, pi_{k+1}}."""
     if len(tasks) <= 1:
         return 0.0
     cost = 0.0
@@ -51,13 +49,8 @@ def evaluate_schedule_switch_cost(
     return round(cost, 4)
 
 
-def check_dag_violations(scheduled_tasks: List[Task]) -> int:
-    """Kiem tra vi pham DAG (No-DAG luon tra ve 0)."""
-    return 0
-
-
 def compute_skill_match_score(tasks: List[Task], team: Team) -> float:
-    """Tinh diem tuong thich ky nang trung binh cua team tren tap task duoc giao."""
+    """Average team competency on assigned tasks."""
     if not tasks:
         return 1.0
     scores = [team.get_skill_score(t.skill) for t in tasks]
@@ -72,22 +65,15 @@ def evaluate_sprint_plan(
     alpha: float = 0.5,
     m_penalty: float = 50.0,
     solver_name: str = "",
-    execution_time_ms: float = 0.0
+    execution_time_ms: float = 0.0,
+    trace_details: Optional[Dict[str, Any]] = None
 ) -> SprintPlan:
-    """
-    Tong hop va danh gia cac chi so cua SprintPlan:
-    - f1: total_utility_resolved (sum u_i)
-    - f2: total_switch_cost (sum C_ij)
-    - total_risk_resolved (sum r_i)
-    - skill_match_score (trung binh diem ky nang)
-    """
+    """Consolidate and evaluate metrics for SprintPlan."""
     task_to_team: Dict[int, str] = {}
     total_switch_cost = 0.0
-    total_dag_violations = 0
     total_assigned_tasks: List[Task] = []
     sms_weighted_sum = 0.0
 
-    # Cap nhat utility cho tung schedule
     updated_schedules: List[ScheduleResult] = []
     for sch in schedules:
         team = teams_dict[sch.team_id]
@@ -132,28 +118,20 @@ def evaluate_sprint_plan(
         total_utility_deferred=total_utility_deferred,
         total_switch_cost=round(total_switch_cost, 4),
         skill_match_score=sms,
-        dag_violations=total_dag_violations,
         solver_name=solver_name,
-        execution_time_ms=execution_time_ms
+        execution_time_ms=execution_time_ms,
+        trace_details=trace_details or {}
     )
 
 
 def extract_pareto_front(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
-    """
-    Trich xuat mat Pareto khong bi thong tri (Non-dominated Pareto Front).
-    Muc tieu: Maximize f1 (Utility), Minimize f2 (Switch Cost).
-    Tra ve danh sach cac diem (f1, f2) duoc sap xep tang dan theo f1.
-    """
+    """Non-dominated Pareto Front extraction (Maximize f1, Minimize f2)."""
     if not points:
         return []
-
-    # Loai bo diem trung
     unique_points = sorted(list(set(points)), key=lambda p: (p[0], -p[1]))
-
     pareto: List[Tuple[float, float]] = []
     for p in unique_points:
         f1_p, f2_p = p
-        # Diem p bi thong tri neu ton tai q sao cho q[0] >= p[0] va q[1] <= p[1] voi it nhat 1 bat dang thuc ngat
         dominated = False
         for q in unique_points:
             if (q[0] >= f1_p and q[1] <= f2_p) and (q[0] > f1_p or q[1] < f2_p):
@@ -161,8 +139,6 @@ def extract_pareto_front(points: List[Tuple[float, float]]) -> List[Tuple[float,
                 break
         if not dominated:
             pareto.append(p)
-
-    # Sap xep theo f1 tang dan
     pareto.sort(key=lambda p: p[0])
     return pareto
 
@@ -171,26 +147,17 @@ def compute_hypervolume(
     pareto_points: List[Tuple[float, float]],
     ref_point: Tuple[float, float]
 ) -> float:
-    """
-    Tinh chi so Hypervolume (HV) 2 chieu cho mat Pareto.
-    Muc tieu: Maximize f1, Minimize f2.
-    ref_point = (f1_ref, f2_ref) voi f1_ref <= min(f1), f2_ref >= max(f2).
-    Dien tich duoc gioi han boi Mat Pareto va Diem chuan ref_point.
-    """
+    """Compute 2D Hypervolume bounded by Pareto Front and ref_point."""
     front = extract_pareto_front(pareto_points)
     if not front:
         return 0.0
 
     f1_ref, f2_ref = ref_point
-
-    # Loc cac diem tot hon ref_point
     valid_points = [p for p in front if p[0] >= f1_ref and p[1] <= f2_ref]
     if not valid_points:
         return 0.0
 
-    # Sap xep tang dan theo f1
     valid_points.sort(key=lambda p: p[0])
-
     area = 0.0
     prev_f1 = f1_ref
     for f1, f2 in valid_points:
@@ -201,3 +168,28 @@ def compute_hypervolume(
         prev_f1 = max(prev_f1, f1)
 
     return round(area, 4)
+
+
+def compute_wilcoxon_pvalue(
+    scores_proposed: List[float],
+    scores_baseline: List[float],
+    alternative: str = "greater"
+) -> float:
+    """
+    Compute Wilcoxon Signed-Rank Test p-value between paired scores.
+    Returns p-value in [0.0, 1.0].
+    """
+    if len(scores_proposed) != len(scores_baseline) or len(scores_proposed) < 3:
+        return 1.0
+    diffs = [round(a - b, 6) for a, b in zip(scores_proposed, scores_baseline)]
+    if all(d == 0 for d in diffs):
+        return 1.0
+    try:
+        from scipy.stats import wilcoxon
+        stat, p_val = wilcoxon(scores_proposed, scores_baseline, alternative=alternative, zero_method="wilcox")
+        return round(float(p_val), 4)
+    except Exception:
+        wins = sum(1 for d in diffs if d > 0)
+        if wins == len(diffs):
+            return round(1.0 / (2 ** len(diffs)), 4)
+        return 0.5

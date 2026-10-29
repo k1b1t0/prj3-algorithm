@@ -11,10 +11,17 @@ from solvers.base import BaseSolver
 
 
 class GreedyCVSSSolver(BaseSolver):
-    def __init__(self, name: str = "Greedy-CVSS", skill_threshold: float = 0.5, use_utility: bool = True):
+    def __init__(
+        self,
+        name: str = "Greedy-CVSS",
+        skill_threshold: float = 0.5,
+        use_utility: bool = True,
+        sort_by_density: bool = True
+    ):
         super().__init__(name=name)
         self.skill_threshold = skill_threshold
         self.use_utility = use_utility
+        self.sort_by_density = sort_by_density
 
     def solve(
         self,
@@ -26,16 +33,34 @@ class GreedyCVSSSolver(BaseSolver):
         t0 = time.perf_counter()
         skill_thresh = kwargs.get("skill_threshold", self.skill_threshold)
         use_u = kwargs.get("use_utility", self.use_utility)
+        by_density = kwargs.get("sort_by_density", self.sort_by_density)
 
-        # 1. Sap xep backlog theo do uu tien (u_i hoac CVSS r_i)
+        # 1. Sap xep backlog theo mat do loi ich rho_i = u_i / e_i giam dan hoac u_i/r_i
         if use_u:
-            sorted_tasks = sorted(
-                tasks,
-                key=lambda t: t.compute_utility(current_sprint=current_sprint),
-                reverse=True
-            )
+            if by_density:
+                sorted_tasks = sorted(
+                    tasks,
+                    key=lambda t: (
+                        t.compute_utility(current_sprint=current_sprint) / max(1, t.e_i),
+                        t.compute_utility(current_sprint=current_sprint)
+                    ),
+                    reverse=True
+                )
+            else:
+                sorted_tasks = sorted(
+                    tasks,
+                    key=lambda t: t.compute_utility(current_sprint=current_sprint),
+                    reverse=True
+                )
         else:
-            sorted_tasks = sorted(tasks, key=lambda t: t.r_i, reverse=True)
+            if by_density:
+                sorted_tasks = sorted(
+                    tasks,
+                    key=lambda t: (t.r_i / max(1, t.e_i), t.r_i),
+                    reverse=True
+                )
+            else:
+                sorted_tasks = sorted(tasks, key=lambda t: t.r_i, reverse=True)
 
         teams_dict = {tm.team_id: tm for tm in teams}
         team_assigned: Dict[str, List[Task]] = {tm.team_id: [] for tm in teams}
