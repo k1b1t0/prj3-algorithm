@@ -70,7 +70,7 @@ def aggregate_rolling_scorecard(
 
 def print_rolling_scorecard(scorecard_rows: List[Dict[str, Any]]):
     print("\n" + "=" * 115)
-    print(f"{'PLAN B: FINAL EVALUATION SCORECARD (Mean +/- Std across 5 Independent Seeds)':^115}")
+    print(f"{'PLAN B: FINAL EVALUATION SCORECARD (Mean +/- Std across Independent Seeds)':^115}")
     print("=" * 115)
     print(f"{'Solver':<22} | {'AUC-TVE (v)':<20} | {'Total Breaches':<16} | {'Total f2':<15} | {'Total Z(0.5)':<15} | {'p-val vs GLS':<12} | {'Rank'}")
     print("-" * 115)

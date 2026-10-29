@@ -1,11 +1,11 @@
 """
-Unified CLI Entry Point for SecOps Vulnerability Scheduling Experiments.
+Diem vao CLI tap trung cho toan bo thuc nghiem SecOps Vulnerability Scheduling.
 Commands:
-  python main.py static     - Run Plan A (Static Snapshot Benchmark)
-  python main.py rolling    - Run Plan B (Multi-Sprint Rolling Benchmark)
-  python main.py inspect    - Inspect single instance with detailed Phase Logger
-  python main.py plot       - Generate all figures (4 Line Charts & Pareto Fronts)
-  python main.py test       - Run full unit test suite
+  python main.py static     - Chay Plan A: Static Snapshot Benchmark
+  python main.py rolling    - Chay Plan B: Multi-Sprint Rolling Benchmark
+  python main.py inspect    - Kiem toan 1 instance chi tiet voi Phase Logger
+  python main.py plot       - Xuat toan bo bieu do (4 Line Charts & Pareto Fronts)
+  python main.py test       - Chay toan bo Unit Tests
 """
 import argparse
 import subprocess
@@ -21,6 +21,11 @@ from solvers.proposed_hcsm.solver import ProposedHCSMSolver
 from solvers.greedy_cvss import GreedyCVSSSolver
 from solvers.cpsat_exact import CPSATExactSolver
 from solvers.ortools_routing import ORToolsRoutingSolver
+from benchmark.config import (
+    DEFAULT_NUM_INSTANCES, DEFAULT_SCENARIOS, DEFAULT_WEIGHTS,
+    DEFAULT_SOLVERS, DEFAULT_ROLLING_SEEDS, DEFAULT_NUM_SPRINTS,
+    DEFAULT_TASKS_PER_SPRINT
+)
 from benchmark import run_benchmark_static, run_benchmark_rolling, plot_all_benchmarks
 
 
@@ -46,7 +51,7 @@ def run_inspect(scenario: str, instance_idx: int, solver_key: str, weight_w: flo
     elif s_norm in ["gls", "routing"]:
         plan = ORToolsRoutingSolver(time_limit_sec=5.0).solve(tasks, teams, current_sprint=4, w=weight_w, bounds=bounds)
     elif s_norm in ["cpsat", "exact"]:
-        plan = CPSATExactSolver(time_limit_sec=15.0).solve(tasks, teams, current_sprint=4, w=weight_w, bounds=bounds)
+        plan = CPSATExactSolver(time_limit_sec=60.0).solve(tasks, teams, current_sprint=4, w=weight_w, bounds=bounds)
     else:
         raise ValueError(f"Unknown solver: {solver_key}")
 
@@ -62,18 +67,19 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True, help="Command to execute")
 
     sub_static = sub.add_parser("static", help="Run Plan A: Static Snapshot Benchmark")
-    sub_static.add_argument("--scenarios", nargs="+", default=["small_40", "medium_100", "large_500"])
-    sub_static.add_argument("--instances", type=int, default=5)
-    sub_static.add_argument("--weights", nargs="+", type=float, default=[0.25, 0.50, 0.75])
-    sub_static.add_argument("--solvers", nargs="+", default=["hcsm", "gls", "cpsat", "greedy"])
-    sub_static.add_argument("--clean", action="store_true", default=False)
+    sub_static.add_argument("--scenarios", nargs="+", default=DEFAULT_SCENARIOS)
+    sub_static.add_argument("--instances", type=int, default=DEFAULT_NUM_INSTANCES)
+    sub_static.add_argument("--weights", nargs="+", type=float, default=DEFAULT_WEIGHTS)
+    sub_static.add_argument("--solvers", nargs="+", default=DEFAULT_SOLVERS)
+    sub_static.add_argument("--clean", action="store_true", default=True)
+    sub_static.add_argument("--skip-cpsat-medium", action="store_true", default=True)
 
     sub_rolling = sub.add_parser("rolling", help="Run Plan B: Multi-Sprint Rolling Benchmark")
-    sub_rolling.add_argument("--seeds", nargs="+", type=int, default=[42, 100, 2024, 777, 999])
-    sub_rolling.add_argument("--sprints", type=int, default=8)
-    sub_rolling.add_argument("--tasks-per-sprint", type=int, default=25)
-    sub_rolling.add_argument("--solvers", nargs="+", default=["hcsm", "gls", "greedy", "cpsat"])
-    sub_rolling.add_argument("--clean", action="store_true", default=False)
+    sub_rolling.add_argument("--seeds", nargs="+", type=int, default=DEFAULT_ROLLING_SEEDS)
+    sub_rolling.add_argument("--sprints", type=int, default=DEFAULT_NUM_SPRINTS)
+    sub_rolling.add_argument("--tasks-per-sprint", type=int, default=DEFAULT_TASKS_PER_SPRINT)
+    sub_rolling.add_argument("--solvers", nargs="+", default=DEFAULT_SOLVERS)
+    sub_rolling.add_argument("--clean", action="store_true", default=True)
 
     sub_insp = sub.add_parser("inspect", help="Inspect single instance with PhaseLogger")
     sub_insp.add_argument("--scenario", default="small_40", choices=["small_40", "medium_100", "large_500"])
@@ -92,7 +98,8 @@ def main():
     if args.command == "static":
         run_benchmark_static(
             scenarios=args.scenarios, instances_count=args.instances,
-            weights=args.weights, solvers_to_run=args.solvers, clean=args.clean
+            weights=args.weights, solvers_to_run=args.solvers, clean=args.clean,
+            skip_cpsat_medium=args.skip_cpsat_medium
         )
     elif args.command == "rolling":
         run_benchmark_rolling(

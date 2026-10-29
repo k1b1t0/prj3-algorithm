@@ -1,6 +1,7 @@
 """
 Plan A: Static Snapshot Benchmark Runner.
-Evaluates solvers across scenarios (small_40, medium_100, large_500), 5 instances, weights w in {0.25, 0.50, 0.75}.
+Danh gia cac bo giai tren cac kich ban (small_40, medium_100, large_500).
+Ho tro tuy bien so luong instances N va lam sach du lieu cu.
 """
 import json
 import time
@@ -13,7 +14,10 @@ from solvers.greedy_cvss import GreedyCVSSSolver
 from solvers.cpsat_exact import CPSATExactSolver
 from solvers.ortools_routing import ORToolsRoutingSolver
 from solvers.proposed_hcsm.solver import ProposedHCSMSolver
-from benchmark.config import PROJECT_ROOT, SCENARIO_CONFIGS
+from benchmark.config import (
+    PROJECT_ROOT, SCENARIO_CONFIGS, DEFAULT_NUM_INSTANCES,
+    DEFAULT_SCENARIOS, DEFAULT_WEIGHTS, DEFAULT_SOLVERS
+)
 from benchmark.static_agg import aggregate_static_metrics, print_static_summary_table
 
 
@@ -44,17 +48,19 @@ def _solve_for_weight(solver_key, tasks, teams, w, bounds, cfg, current_sprint):
 
 def run_benchmark_static(
     scenarios: Optional[List[str]] = None,
-    instances_count: int = 5,
+    instances_count: Optional[int] = None,
     weights: Optional[List[float]] = None,
     solvers_to_run: Optional[List[str]] = None,
     output_dir: Optional[Path] = None,
     current_sprint: int = 4,
+    skip_cpsat_medium: bool = True,
     skip_cpsat_large: bool = True,
-    clean: bool = False
+    clean: bool = True
 ) -> Dict[str, Any]:
-    scenarios = scenarios or ["small_40", "medium_100", "large_500"]
-    weights = weights or [0.25, 0.50, 0.75]
-    solvers_to_run = solvers_to_run or ["hcsm", "gls", "cpsat", "greedy"]
+    scenarios = scenarios or DEFAULT_SCENARIOS
+    instances_count = instances_count or DEFAULT_NUM_INSTANCES
+    weights = weights or DEFAULT_WEIGHTS
+    solvers_to_run = solvers_to_run or DEFAULT_SOLVERS
 
     out_base = output_dir or (PROJECT_ROOT / "outputs" / "static")
     out_base.mkdir(parents=True, exist_ok=True)
@@ -88,7 +94,13 @@ def run_benchmark_static(
 
             for s_key in solvers_to_run:
                 s_key_norm = s_key.lower().strip()
-                if s_key_norm in ["cpsat", "cpsat_exact", "exact"] and sc == "large_500" and skip_cpsat_large:
+                is_cpsat = s_key_norm in ["cpsat", "cpsat_exact", "exact"]
+                should_skip_cpsat = is_cpsat and (
+                    (sc == "large_500" and skip_cpsat_large) or
+                    (sc == "medium_100" and skip_cpsat_medium)
+                )
+
+                if should_skip_cpsat:
                     for w in weights:
                         rec = {
                             "scenario": sc, "instance_idx": inst_idx, "solver": "OR-Tools CP-SAT",
@@ -131,4 +143,3 @@ def run_benchmark_static(
     summary_rows = aggregate_static_metrics(raw_runs, scenarios, summary_path)
     print_static_summary_table(summary_rows)
     return {"raw_runs": raw_runs, "summary": summary_rows}
-

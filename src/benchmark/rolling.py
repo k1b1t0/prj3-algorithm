@@ -14,7 +14,10 @@ from solvers.greedy_cvss import GreedyCVSSSolver
 from solvers.cpsat_exact import CPSATExactSolver
 from solvers.ortools_routing import ORToolsRoutingSolver
 from solvers.proposed_hcsm.solver import ProposedHCSMSolver
-from benchmark.config import PROJECT_ROOT
+from benchmark.config import (
+    PROJECT_ROOT, DEFAULT_ROLLING_SEEDS, DEFAULT_NUM_SPRINTS,
+    DEFAULT_TASKS_PER_SPRINT, DEFAULT_SOLVERS
+)
 from benchmark.rolling_pool import generate_rolling_backlog_pool
 from benchmark.rolling_agg import aggregate_rolling_scorecard, print_rolling_scorecard
 
@@ -40,17 +43,19 @@ def _step_solver(s_key_norm, backlog, teams, s, cpsat_to, gls_to):
 
 def run_benchmark_rolling(
     seeds: Optional[List[int]] = None,
-    num_sprints: int = 8,
-    tasks_per_sprint: int = 25,
+    num_sprints: Optional[int] = None,
+    tasks_per_sprint: Optional[int] = None,
     n_teams: int = 2,
     solvers_to_run: Optional[List[str]] = None,
     output_dir: Optional[Path] = None,
     cpsat_timeout_sec: float = 15.0,
     gls_timeout_sec: float = 1.0,
-    clean: bool = False
+    clean: bool = True
 ) -> Dict[str, Any]:
-    seeds = seeds or [42, 100, 2024, 777, 999]
-    solvers_to_run = solvers_to_run or ["hcsm", "gls", "greedy", "cpsat"]
+    seeds = seeds or DEFAULT_ROLLING_SEEDS
+    num_sprints = num_sprints or DEFAULT_NUM_SPRINTS
+    tasks_per_sprint = tasks_per_sprint or DEFAULT_TASKS_PER_SPRINT
+    solvers_to_run = solvers_to_run or DEFAULT_SOLVERS
     out_base = output_dir or (PROJECT_ROOT / "outputs" / "rolling")
     out_base.mkdir(parents=True, exist_ok=True)
     traces_dir = out_base / "traces"
