@@ -67,9 +67,10 @@ def pack_chunks_to_teams(
 
     while True:
         best_cand = None
-        best_density = -float("inf")
-        best_gain = -float("inf")
-        best_delta_c = 0.0
+        best_density = 0.0  # Guardrail: strictly requires marginal gain Delta Z(w) > 0
+        best_gain = 0.0
+        best_delta_c = 1.0
+        best_affinity = -1
 
         for chunk in chunks:
             if chunk.chunk_id in assigned_chunk_ids:
@@ -85,24 +86,37 @@ def pack_chunks_to_teams(
                 if chunk.total_effort > rem:
                     continue
 
-                # 3. Bridge context cost Delta C(B_k, A_m)
+                # 3. Bridge context cost Delta C(B_k, A_m) & domain affinity
                 assigned_to_tm = team_chunks[tm.team_id]
                 if not assigned_to_tm:
                     delta_c = 0.0
+                    affinity = 0
                 else:
                     delta_c = min(
                         dist_matrix[(chunk.chunk_id, q.chunk_id)]
                         for q in assigned_to_tm
                     )
+                    has_same_mod = any(
+                        q.repository == chunk.repository and q.asset_module == chunk.asset_module
+                        for q in assigned_to_tm
+                    )
+                    has_same_repo = any(q.repository == chunk.repository for q in assigned_to_tm)
+                    affinity = 10 if has_same_mod else (5 if has_same_repo else 1)
 
                 # 4. Global Objective Delta Z(w) Gain & Density
                 gain = w * (chunk.total_utility / safe_f1_max) - (1.0 - w) * (delta_c / safe_f2_max)
                 density = gain / max(1, chunk.total_effort)
 
-                if (density > best_density) or (density == best_density and gain > best_gain):
+                # Select best candidate: prioritize density > 0, break ties by affinity then gain
+                if (density > best_density + 1e-7) or (
+                    abs(density - best_density) <= 1e-7 and affinity > best_affinity
+                ) or (
+                    abs(density - best_density) <= 1e-7 and affinity == best_affinity and gain > best_gain
+                ):
                     best_density = density
                     best_gain = gain
                     best_delta_c = delta_c
+                    best_affinity = affinity
                     best_cand = (chunk, tm)
 
         if best_cand is None:
