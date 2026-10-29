@@ -27,10 +27,10 @@ def compute_context_distance(
 def compute_mitigation_utility(
     task: Task,
     current_sprint: int = 4,
-    alpha: float = 0.5,
-    m_penalty: float = 50.0
+    alpha: float = 0.6,
+    m_penalty: float = 0.0
 ) -> float:
-    """Dynamic Mitigation Utility u_i."""
+    """Dynamic Mitigation Utility u_i in (0, 1]."""
     return task.compute_utility(current_sprint=current_sprint, alpha=alpha, m_penalty=m_penalty)
 
 
@@ -62,8 +62,8 @@ def evaluate_sprint_plan(
     schedules: List[ScheduleResult],
     teams_dict: Dict[str, Team],
     current_sprint: int = 4,
-    alpha: float = 0.5,
-    m_penalty: float = 50.0,
+    alpha: float = 0.6,
+    m_penalty: float = 0.0,
     solver_name: str = "",
     execution_time_ms: float = 0.0,
     trace_details: Optional[Dict[str, Any]] = None
@@ -84,7 +84,7 @@ def evaluate_sprint_plan(
             task_to_team[t.id] = sch.team_id
             total_assigned_tasks.append(t)
             sms_weighted_sum += team.get_skill_score(t.skill)
-            sch_utility += t.compute_utility(current_sprint, alpha, m_penalty)
+            sch_utility += t.compute_utility(current_sprint=current_sprint, alpha=alpha, m_penalty=m_penalty)
 
         updated_schedules.append(ScheduleResult(
             team_id=sch.team_id,
@@ -101,10 +101,10 @@ def evaluate_sprint_plan(
     total_risk_deferred = round(sum(t.r_i for t in deferred_tasks), 2)
 
     total_utility_resolved = round(
-        sum(t.compute_utility(current_sprint, alpha, m_penalty) for t in total_assigned_tasks), 2
+        sum(t.compute_utility(current_sprint=current_sprint, alpha=alpha, m_penalty=m_penalty) for t in total_assigned_tasks), 2
     )
     total_utility_deferred = round(
-        sum(t.compute_utility(current_sprint, alpha, m_penalty) for t in deferred_tasks), 2
+        sum(t.compute_utility(current_sprint=current_sprint, alpha=alpha, m_penalty=m_penalty) for t in deferred_tasks), 2
     )
 
     sms = round(sms_weighted_sum / len(total_assigned_tasks), 4) if total_assigned_tasks else 0.0

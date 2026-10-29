@@ -1,25 +1,24 @@
 """
 Proposed Algorithm: H-CSM (Hierarchical Capacitated Cluster-Simulate-Match).
-4-Phase Matheuristic:
-- Phase 1: Pure Atomic Coarsening & Capacitated Chunking.
-- Phase 2: Multi-Cluster Packing with Global Objective Delta Z(w) / Effort.
-- Phase 3: Residual Backfill & Hard Guardrail (S(i, m, w) > 0).
-- Phase 4: Super-Node Block-Level Open-TSP via Bitmask DP (B <= 12).
+Quotient-DP Matheuristic (3-Phase Architecture):
+- Phase 1: Quotient Space Reduction & Exact Intra-Cluster DP Profiling.
+- Phase 2: Unified Multiple-Choice Quotient Allocation with Exact Path Insertion.
+- Phase 3: Inter-Team Quotient Consolidation & Exact Bitmask DP Open-TSP.
+Strictly no DAG logic, line limit < 200 lines.
 """
 import time
 from typing import List, Dict, Tuple, Optional, Any
-
 import numpy as np
 
 from models import Task, Team, ScheduleResult, SprintPlan
 from bounds import ObjectiveBounds, compute_static_bounds
 from metrics import evaluate_schedule_switch_cost, evaluate_sprint_plan, extract_pareto_front, compute_hypervolume
 from solvers.base import BaseSolver
-from solvers.proposed_hcsm.coarsening import create_atomic_chunks
-from solvers.proposed_hcsm.packing import pack_chunks_to_teams
-from solvers.proposed_hcsm.backfill import backfill_residual_tasks
-from solvers.proposed_hcsm.block_tsp import sequence_team_tasks_block_tsp
-from solvers.proposed_hcsm.logger import print_phase_trace
+from .quotient_dp import partition_into_quotient_clusters
+from .quotient_allocation import allocate_quotient_clusters
+from .inter_team_swap import consolidate_inter_team_quotients
+from .block_tsp import sequence_team_tasks_block_tsp
+from .logger import print_phase_trace
 
 
 class ProposedHCSMSolver(BaseSolver):
@@ -54,6 +53,7 @@ class ProposedHCSMSolver(BaseSolver):
         w_val = self.default_w if w is None else w
         skill_thresh = kwargs.get("skill_threshold", self.skill_threshold)
         teams_dict = {tm.team_id: tm for tm in teams}
+        max_cap = max((tm.capacity_sp for tm in teams), default=30)
 
         if bounds is None:
             bounds = compute_static_bounds(tasks, teams, current_sprint=current_sprint)
@@ -68,35 +68,23 @@ class ProposedHCSMSolver(BaseSolver):
             plan.execution_time_ms = round((time.perf_counter() - t0) * 1000, 2)
             return plan
 
-        # Phase 1: Atomic Coarsening & Capacitated Chunking
-        chunks, _ = create_atomic_chunks(tasks=tasks, teams=teams, current_sprint=current_sprint)
+        # Phase 1: Quotient Space Reduction & Exact Intra-Cluster DP Profiling
+        clusters = partition_into_quotient_clusters(tasks=tasks, max_cap=max_cap, current_sprint=current_sprint)
 
-        # Phase 2: Multi-Cluster Packing with Delta Z(w)
-        team_chunks, team_rem_cap, unassigned_chunks, packing_trace = pack_chunks_to_teams(
-            chunks=chunks, teams=teams, w=w_val, f1_max=bounds.f1_max, f2_max=bounds.f2_max,
-            skill_threshold=skill_thresh, w_repo=self.w_repo, w_mod=self.w_mod, w_skill=self.w_skill
+        # Phase 2: Unified Multiple-Choice Quotient Allocation with Exact Path Insertion
+        team_paths, team_tasks, team_rem_cap = allocate_quotient_clusters(
+            clusters=clusters, teams=teams, w=w_val, f1_max=bounds.f1_max, f2_max=bounds.f2_max,
+            skill_threshold=skill_thresh, current_sprint=current_sprint
         )
 
-        assigned_tasks_by_team: Dict[str, List[Task]] = {tm.team_id: [] for tm in teams}
-        for tm in teams:
-            for ch in team_chunks[tm.team_id]:
-                assigned_tasks_by_team[tm.team_id].extend(ch.tasks)
+        # Phase 3.1: Inter-Team Quotient Consolidation
+        team_tasks = consolidate_inter_team_quotients(team_tasks=team_tasks, teams=teams, skill_threshold=skill_thresh)
 
-        unassigned_tasks = [t for ch in unassigned_chunks for t in ch.tasks]
-
-        # Phase 3: Residual Backfill & Hard Guardrail (S > 0)
-        assigned_tasks_by_team, team_rem_cap, remaining_unassigned, accepted_backfill, blocked_backfill = backfill_residual_tasks(
-            assigned_tasks_by_team=assigned_tasks_by_team, unassigned_tasks=unassigned_tasks, teams=teams,
-            team_rem_cap=team_rem_cap, w=w_val, f1_max=bounds.f1_max, f2_max=bounds.f2_max,
-            current_sprint=current_sprint, skill_threshold=skill_thresh,
-            w_repo=self.w_repo, w_mod=self.w_mod, w_skill=self.w_skill
-        )
-
-        # Phase 4: Super-Node Block-Level Open-TSP (Bitmask DP)
+        # Phase 3.2: Intra-Team Exact Bitmask DP Open-TSP
         schedules: List[ScheduleResult] = []
         routing_traces: Dict[str, Any] = {}
         for tm in teams:
-            raw_tasks = assigned_tasks_by_team[tm.team_id]
+            raw_tasks = team_tasks[tm.team_id]
             ordered_tasks, route_info = sequence_team_tasks_block_tsp(
                 tasks=raw_tasks, current_sprint=current_sprint,
                 w_repo=self.w_repo, w_mod=self.w_mod, w_skill=self.w_skill
@@ -117,12 +105,11 @@ class ProposedHCSMSolver(BaseSolver):
             "bounds": {"f1_max": bounds.f1_max, "f2_max": bounds.f2_max},
             "phase1": {
                 "input_task_count": len(tasks),
-                "chunk_count": len(chunks),
-                "chunks": [{"chunk_id": c.chunk_id, "repo": c.repository, "module": c.asset_module, "skill": c.skill, "effort": c.total_effort, "task_ids": [t.id for t in c.tasks]} for c in chunks]
+                "cluster_count": len(clusters),
+                "clusters": [{"id": c.cluster_id, "repo": c.repository, "mod": c.asset_module, "effort": c.total_effort} for c in clusters]
             },
-            "phase2": {"packing_steps": packing_trace, "rem_cap_after_packing": {tm.team_id: team_rem_cap[tm.team_id] for tm in teams}},
-            "phase3": {"accepted_backfills": accepted_backfill, "blocked_guardrail": blocked_backfill, "final_rem_cap": {tm.team_id: team_rem_cap[tm.team_id] for tm in teams}},
-            "phase4": {"team_routes": routing_traces}
+            "phase2": {"rem_cap": team_rem_cap},
+            "phase3": {"team_routes": routing_traces}
         }
 
         plan = evaluate_sprint_plan(

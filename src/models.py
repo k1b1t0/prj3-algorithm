@@ -34,16 +34,25 @@ class Task:
     def compute_utility(
         self,
         current_sprint: int = 4,
-        alpha: float = 0.5,
-        m_penalty: float = 50.0
+        alpha: float = 0.6,
+        m_penalty: float = 0.0,
+        criticality: float = 1.0,
+        gamma: float = 1.5
     ) -> float:
         """
-        Compute dynamic mitigation utility:
-        u_i = r_i + alpha * max(0, tau - disc_i) + M_penalty * I(tau >= dead_i)
+        VULCON-grounded normalized mitigation utility u_i in (0, 1]:
+        s_hat = r_i / 10.0 in [0, 1]
+        p_hat = min(1.0, (elapsed / sla_window) ** gamma) in [0, 1]
+        u_i = Q_i * (alpha * s_hat + (1 - alpha) * p_hat) in (0, 1]
         """
-        persistence = max(0, current_sprint - self.earliest_sprint)
-        urgency = 1.0 if current_sprint >= self.deadline_sprint else 0.0
-        return round(self.r_i + alpha * persistence + m_penalty * urgency, 4)
+        s_hat = min(1.0, max(0.0, self.r_i / 10.0))
+        elapsed = max(0, current_sprint - self.earliest_sprint)
+        sla_window = max(1, self.deadline_sprint - self.earliest_sprint)
+        p_hat = min(1.0, (elapsed / sla_window) ** gamma)
+        u_base = criticality * (alpha * s_hat + (1.0 - alpha) * p_hat)
+        # Goal programming overdue deviation indicator (if m_penalty > 0)
+        overdue_bump = 0.1 if (current_sprint >= self.deadline_sprint and m_penalty > 0) else 0.0
+        return round(min(1.0, max(0.01, u_base + overdue_bump)), 4)
 
     def to_dict(self) -> Dict[str, Any]:
         return {

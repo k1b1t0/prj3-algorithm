@@ -32,13 +32,15 @@ class TestModelsAndMetrics(unittest.TestCase):
         self.assertEqual(d_diff, 1.0)
 
     def test_mitigation_utility(self):
-        # Current sprint = 4 (at deadline): u = 8.0 + 0.5 * (4 - 1) + 50.0 = 59.5
-        u = self.task1.compute_utility(current_sprint=4, alpha=0.5, m_penalty=50.0)
-        self.assertEqual(u, 59.5)
+        # Current sprint = 4 (at deadline): u_i = 0.6 * (8/10) + 0.4 * (3/3)^1.5 = 0.48 + 0.40 = 0.88
+        u = self.task1.compute_utility(current_sprint=4, alpha=0.6)
+        self.assertEqual(u, 0.88)
 
-        # Current sprint = 2 (before deadline): u = 8.0 + 0.5 * (2 - 1) + 0.0 = 8.5
-        u_early = self.task1.compute_utility(current_sprint=2, alpha=0.5, m_penalty=50.0)
-        self.assertEqual(u_early, 8.5)
+        # Current sprint = 2 (before deadline): u_i is lower than at deadline
+        u_early = self.task1.compute_utility(current_sprint=2, alpha=0.6)
+        self.assertLess(u_early, u)
+        self.assertGreater(u_early, 0.0)
+        self.assertLessEqual(u, 1.0)
 
     def test_static_bounds(self):
         tasks = [self.task1, self.task2, self.task3]
