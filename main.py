@@ -73,6 +73,7 @@ def main():
     sub_static.add_argument("--solvers", nargs="+", default=DEFAULT_SOLVERS)
     sub_static.add_argument("--clean", action="store_true", default=True)
     sub_static.add_argument("--skip-cpsat-medium", action="store_true", default=True)
+    sub_static.add_argument("--time-limit-cpsat", type=float, default=None)
 
     sub_rolling = sub.add_parser("rolling", help="Run Plan B: Multi-Sprint Rolling Benchmark")
     sub_rolling.add_argument("--seeds", nargs="+", type=int, default=DEFAULT_ROLLING_SEEDS)
@@ -99,7 +100,7 @@ def main():
         run_benchmark_static(
             scenarios=args.scenarios, instances_count=args.instances,
             weights=args.weights, solvers_to_run=args.solvers, clean=args.clean,
-            skip_cpsat_medium=args.skip_cpsat_medium
+            skip_cpsat_medium=args.skip_cpsat_medium, time_limit_cpsat=args.time_limit_cpsat
         )
     elif args.command == "rolling":
         run_benchmark_rolling(
