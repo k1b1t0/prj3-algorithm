@@ -55,7 +55,6 @@ flowchart TD
    - Bộ giải quy hoạch nguyên chính xác của Google.
    - Đóng vai trò mốc đối chuẩn trên `small_40` (Feasible 60s); quá tải bùng nổ tổ hợp trên `medium_100` và `large_500`.
 3. **`OR-Tools Routing GLS` (Baseline 3 — Metaheuristic công nghiệp)**:
-   - Giải bài toán Capacitated Team Orienteering Problem (CTOP) bằng `PARALLEL_CHEAPEST_INSERTION` và `GUIDED_LOCAL_SEARCH`.
 
 ---
 
@@ -69,7 +68,7 @@ source .venv/bin/activate
 uv sync
 ```
 
-### 4.2. Kế Hoạch A: Thực Nghiệm Đơn Sprint (Static Snapshot Benchmark)
+### 4.2. Benchmark đơn sprint
 Chạy đối chuẩn cả 4 thuật toán trên các kịch bản (`small_40`, `medium_100`, `large_500`) qua $N$ instances độc lập:
 
 ```bash
@@ -81,23 +80,17 @@ python main.py static --weights 0.25 0.50 0.75 --time-limit-cpsat 20.0
 
 # Chạy chỉ định kịch bản và số lượng instances
 python main.py static --scenarios small_40 medium_100 --instances 5 --weights 0.25 0.50 0.75
-
-# Chạy trực tiếp qua script riêng biệt
-python scripts/run_benchmark_static.py --weights 0.25 0.50 0.75 --time-limit-cpsat 20.0
 ```
 
-### 4.3. Kế Hoạch B: Thực Nghiệm Chuỗi 8 Sprint Liên Tiếp (Rolling Benchmark)
+### 4.3. Benchmark chuỗi 8 sprint
 Mô phỏng chu trình thực tế qua chuỗi 8 Sprint với cơ chế già hóa rủi ro và phạt vi phạm hạn chót SLA:
 
 ```bash
 # Lệnh chuẩn: Chạy 10 random seeds qua 8 Sprints cho cả 4 bộ giải
 python main.py rolling
-
-# Chạy trực tiếp qua script riêng biệt với số lượng seeds tùy biến
-python scripts/run_benchmark_rolling.py --seeds 42 100 2024
 ```
 
-### 4.4. Kiểm Toán Chi Tiết Lời Giải Từng Pha (Inspection with Phase Logger)
+### 4.4. Inspect lời giải
 In chi tiết ma trận log từng pha của H-CSM (danh sách cluster, dung lượng nạp, lộ trình chuyển đổi ngữ cảnh):
 
 ```bash
@@ -108,7 +101,7 @@ python main.py inspect --scenario small_40 --instance 1 --solver proposed --weig
 python main.py inspect --scenario small_40 --instance 1 --solver gls --weight 0.50
 ```
 
-### 4.5. Xuất Đồ Thị & Trực Quan Hóa (Publication Figures)
+### 4.5. Trực quan hoá
 Tự động vẽ và cập nhật toàn bộ đồ thị xuất bản tại `outputs/figures/`:
 - 3 Đồ thị **Pareto Frontier** (`pareto_small_40.png`, `pareto_medium_100.png`, `pareto_large_500.png`) thể hiện đường đánh đổi giữa $f_1$ và $f_2$ kèm sai số $\text{Mean} \pm \text{Std}$ qua các trọng số $w$.
 - 4 Đồ thị **Rolling Line Charts** (`rolling_tve.png`, `rolling_breaches.png`, `rolling_switch_cost.png`, `rolling_utility_z.png`) và biểu đồ tổng hợp `rolling_overview_4panel.png`.
@@ -116,26 +109,15 @@ Tự động vẽ và cập nhật toàn bộ đồ thị xuất bản tại `ou
 ```bash
 # Xuất toàn bộ biểu đồ
 python main.py plot
-# Hoặc chạy qua script
-python scripts/plot_benchmarks.py
 ```
 
-### 4.6. Trích Xuất Báo Cáo Đối Chuẩn (Automated Report Extraction)
+### 4.6. Trích xuất báo cáo
 Trích xuất tự động bảng điểm đối chuẩn từ log thực nghiệm CSV/JSON mà không cần chạy lại solver:
 
 ```bash
 # In bảng điểm đối chuẩn ra terminal và tự động cập nhật BENCHMARK_REPORT.md
 python main.py report
-
-# Hoặc chạy trực tiếp script độc lập
-python scripts/export_report.py
 ```
-
-### 4.7. Chạy Kiểm Thử Đơn Vị (Unit Tests)
-```bash
-python main.py test
-```
-
 ---
 
 ## 5. Cấu Trúc File & Báo Cáo Kết Quả
