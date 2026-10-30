@@ -85,7 +85,8 @@ def plot_rolling_line_charts(records: List[Dict[str, Any]], figures_dir: Path):
         if idx == 0:
             ax.legend(frameon=True, facecolor="white", framealpha=0.9, fontsize=9)
 
-    fig.suptitle("Plan B: Multi-Sprint Rolling Simulation (8 Sprints x 5 Random Seeds)", fontsize=15, fontweight="bold", y=0.99)
+    n_seeds = len(set(r.get("seed", 0) for r in records))
+    fig.suptitle(f"Plan B: Multi-Sprint Rolling Simulation (8 Sprints x {n_seeds} Random Seeds)", fontsize=15, fontweight="bold", y=0.99)
     fig.tight_layout()
     fig.savefig(figures_dir / "rolling_overview_4panel.png")
     plt.close(fig)
