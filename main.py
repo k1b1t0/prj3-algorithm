@@ -92,6 +92,7 @@ def main():
     sub_plot = sub.add_parser("plot", help="Generate publication-ready figures")
     sub_plot.add_argument("--output-dir", default=str(PROJECT_ROOT / "outputs" / "figures"))
 
+    sub.add_parser("report", help="Export and print benchmark report from existing logs")
     sub.add_parser("test", help="Run complete unit test suite")
 
     args = parser.parse_args()
@@ -114,6 +115,12 @@ def main():
         )
     elif args.command == "plot":
         plot_all_benchmarks(Path(args.output_dir))
+    elif args.command == "report":
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("export_report", str(PROJECT_ROOT / "scripts" / "export_report.py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        mod.main()
     elif args.command == "test":
         cmd = [sys.executable, "-m", "unittest", "discover", "tests"]
         subprocess.run(cmd, cwd=str(PROJECT_ROOT), check=True)

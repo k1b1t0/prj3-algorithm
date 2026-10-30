@@ -39,7 +39,8 @@ flowchart TD
    - Gom các task có $C_{ij} = 0$ thành $K$ siêu node tương đương.
    - Với mỗi siêu node $b$, giải **1D Knapsack DP chính xác** $\Phi_b(c)$ cho mọi mức dung lượng $c \in [1, C_{\max}]$.
 2. **Pha 2 (Quotient Allocation & Open-Chain Routing)**:
-   - Phân bổ siêu node cho các đội kỹ thuật theo tỷ suất hiệu quả biên $\eta = \Delta \Phi / \Delta c$.
+   - Phân bổ siêu node cho các đội kỹ thuật theo tỷ suất hiệu quả biên đa mục tiêu:
+     $$\eta(b, c, t) = \frac{w \cdot \frac{\Phi_b(c)}{f_1^{\max}} - (1 - w) \cdot \frac{\Delta C(b, \pi_t)}{f_2^{\max}}}{c}$$
    - Xâu chuỗi lộ trình Open-TSP của các siêu node bằng thuật toán chèn rẻ nhất (Cheapest Insertion).
 3. **Pha 3 (Inter-Team Swap Refinement)**:
    - Tinh chỉnh hoán đổi các khối công việc giữa các đội để cân bằng dung lượng và giảm thiểu chi phí chuyển đổi liên đội.
@@ -119,7 +120,18 @@ python main.py plot
 python scripts/plot_benchmarks.py
 ```
 
-### 4.6. Chạy Kiểm Thử Đơn Vị (Unit Tests)
+### 4.6. Trích Xuất Báo Cáo Đối Chuẩn (Automated Report Extraction)
+Trích xuất tự động bảng điểm đối chuẩn từ log thực nghiệm CSV/JSON mà không cần chạy lại solver:
+
+```bash
+# In bảng điểm đối chuẩn ra terminal và tự động cập nhật BENCHMARK_REPORT.md
+python main.py report
+
+# Hoặc chạy trực tiếp script độc lập
+python scripts/export_report.py
+```
+
+### 4.7. Chạy Kiểm Thử Đơn Vị (Unit Tests)
 ```bash
 python main.py test
 ```
