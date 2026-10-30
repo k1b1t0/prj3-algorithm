@@ -35,10 +35,10 @@ flowchart TD
     D --> E["Kế Hoạch Sprint Tối Ưu Pareto<br/>(Thực thi siêu tốc 9 - 280 ms, chất lượng vượt trội GLS +21.8%)"]
 ```
 
-1. **Pha 1 (Quotient-DP Equivalence Partitioning)**:
+1. **Pha 1**:
    - Gom các task có $C_{ij} = 0$ thành $K$ siêu node tương đương.
    - Với mỗi siêu node $b$, giải **1D Knapsack DP chính xác** $\Phi_b(c)$ cho mọi mức dung lượng $c \in [1, C_{\max}]$.
-2. **Pha 2 (Quotient Allocation & Open-Chain Routing)**:
+2. **Pha 2**:
    - Phân bổ siêu node cho các đội kỹ thuật theo tỷ suất hiệu quả biên đa mục tiêu:
      $$\eta(b, c, t) = \frac{w \cdot \frac{\Phi_b(c)}{f_1^{\max}} - (1 - w) \cdot \frac{\Delta C(b, \pi_t)}{f_2^{\max}}}{c}$$
    - Xâu chuỗi lộ trình Open-TSP của các siêu node bằng thuật toán chèn rẻ nhất (Cheapest Insertion).
