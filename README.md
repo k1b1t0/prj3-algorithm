@@ -42,7 +42,7 @@ flowchart TD
    - Phân bổ siêu node cho các đội kỹ thuật theo tỷ suất hiệu quả biên đa mục tiêu:
      $$\eta(b, c, t) = \frac{w \cdot \frac{\Phi_b(c)}{f_1^{\max}} - (1 - w) \cdot \frac{\Delta C(b, \pi_t)}{f_2^{\max}}}{c}$$
    - Xâu chuỗi lộ trình Open-TSP của các siêu node bằng thuật toán chèn rẻ nhất (Cheapest Insertion).
-3. **Pha 3 (Inter-Team Swap Refinement)**:
+3. **Pha 3**:
    - Tinh chỉnh hoán đổi các khối công việc giữa các đội để cân bằng dung lượng và giảm thiểu chi phí chuyển đổi liên đội.
 
 ---
@@ -52,7 +52,7 @@ flowchart TD
 1. **`Greedy-CVSS` (Baseline 1 — Thực tế doanh nghiệp Jira/Scrum)**:
    - Bốc việc tham lam tuần tự theo mật độ lợi ích CVSS $\rho_i = u_i / e_i$, mù chi phí chuyển đổi ngữ cảnh ($f_2$).
 2. **`OR-Tools CP-SAT` (Baseline 2 — Chuẩn vàng lý thuyết MO-MILP)**:
-   - Bộ giải quy hoạch nguyên chính xác của Google với ràng buộc khử chu trình con Miller-Tucker-Zemlin (MTZ).
+   - Bộ giải quy hoạch nguyên chính xác của Google.
    - Đóng vai trò mốc đối chuẩn trên `small_40` (Feasible 60s); quá tải bùng nổ tổ hợp trên `medium_100` và `large_500`.
 3. **`OR-Tools Routing GLS` (Baseline 3 — Metaheuristic công nghiệp)**:
    - Giải bài toán Capacitated Team Orienteering Problem (CTOP) bằng `PARALLEL_CHEAPEST_INSERTION` và `GUIDED_LOCAL_SEARCH`.
