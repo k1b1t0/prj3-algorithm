@@ -21,7 +21,7 @@ from benchmark.config import (
 from benchmark.static_agg import aggregate_static_metrics, print_static_summary_table
 
 
-def _solve_for_weight(solver_key, tasks, teams, w, bounds, cfg, current_sprint):
+def _solve_for_weight(solver_key, tasks, teams, w, bounds, cfg, current_sprint, cpsat_tl=None):
     t_start = time.perf_counter()
     if solver_key in ["hcsm", "proposed_hcsm", "proposed"]:
         plan = ProposedHCSMSolver().solve(tasks, teams, current_sprint=current_sprint, w=w, bounds=bounds)
@@ -32,7 +32,8 @@ def _solve_for_weight(solver_key, tasks, teams, w, bounds, cfg, current_sprint):
         )
         name = "Routing GLS"
     elif solver_key in ["cpsat", "cpsat_exact", "exact"]:
-        plan = CPSATExactSolver(time_limit_sec=cfg["time_limit_cpsat"]).solve(
+        t_lim = cpsat_tl or cfg["time_limit_cpsat"]
+        plan = CPSATExactSolver(time_limit_sec=t_lim).solve(
             tasks, teams, current_sprint=current_sprint, w=w, bounds=bounds
         )
         name = "OR-Tools CP-SAT"
@@ -55,7 +56,8 @@ def run_benchmark_static(
     current_sprint: int = 4,
     skip_cpsat_medium: bool = True,
     skip_cpsat_large: bool = True,
-    clean: bool = True
+    clean: bool = True,
+    time_limit_cpsat: Optional[float] = None
 ) -> Dict[str, Any]:
     scenarios = scenarios or DEFAULT_SCENARIOS
     instances_count = instances_count or DEFAULT_NUM_INSTANCES
@@ -116,7 +118,9 @@ def run_benchmark_static(
                     continue
 
                 for w in weights:
-                    plan, s_name, elapsed_ms = _solve_for_weight(s_key_norm, tasks, teams, w, bounds, cfg, current_sprint)
+                    plan, s_name, elapsed_ms = _solve_for_weight(
+                        s_key_norm, tasks, teams, w, bounds, cfg, current_sprint, cpsat_tl=time_limit_cpsat
+                    )
                     z_val = bounds.compute_z(plan.total_utility_resolved, plan.total_switch_cost, w)
                     status = getattr(plan, "solver_status", "FEASIBLE")
 

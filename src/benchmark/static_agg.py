@@ -119,3 +119,22 @@ def print_static_summary_table(summary_rows: List[Dict[str, Any]]):
         print(f"{r['Scenario']:<12} | {r['Solver']:<20} | {f1_str:<17} | {f2_str:<15} | {z05_str:<17} | {tm_str:<16} | {r['Gap_Gain_w0.5']:<18} | {r['p_value_vs_GLS']}")
     print("=" * 125)
     print("(*) Indicates statistically significant superiority vs Baseline via Wilcoxon Signed-Rank Test (p < 0.05).")
+    print_pareto_weights_table(summary_rows)
+
+
+def print_pareto_weights_table(summary_rows: List[Dict[str, Any]]):
+    print("\n" + "=" * 90)
+    print(f"{'PLAN A: MULTI-WEIGHT PARETO SCORECARD (Mean +/- Std across Instances)':^90}")
+    print("=" * 90)
+    print(f"{'Scenario':<12} | {'Solver':<20} | {'Z(w=0.25)':<16} | {'Z(w=0.50)':<16} | {'Z(w=0.75)':<16}")
+    print("-" * 90)
+    last_sc = None
+    for r in summary_rows:
+        if last_sc is not None and r["Scenario"] != last_sc:
+            print("-" * 90)
+        last_sc = r["Scenario"]
+        z025_str = f"{r['Z_0.25_mean']:.3f} +/- {r['Z_0.25_std']:.3f}" if r["Z_0.25_mean"] > 0 else "—"
+        z050_str = f"{r['Z_0.50_mean']:.3f} +/- {r['Z_0.50_std']:.3f}" if r["Z_0.50_mean"] > 0 else "—"
+        z075_str = f"{r['Z_0.75_mean']:.3f} +/- {r['Z_0.75_std']:.3f}" if r["Z_0.75_mean"] > 0 else "—"
+        print(f"{r['Scenario']:<12} | {r['Solver']:<20} | {z025_str:<16} | {z050_str:<16} | {z075_str:<16}")
+    print("=" * 90)

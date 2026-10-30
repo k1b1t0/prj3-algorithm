@@ -18,8 +18,10 @@ if __name__ == "__main__":
     parser.add_argument("--weights", nargs="+", type=float, default=DEFAULT_WEIGHTS)
     parser.add_argument("--solvers", nargs="+", default=DEFAULT_SOLVERS)
     parser.add_argument("--clean", action="store_true", default=True)
+    parser.add_argument("--time-limit-cpsat", type=float, default=None)
     args = parser.parse_args()
     run_benchmark_static(
         scenarios=args.scenarios, instances_count=args.instances,
-        weights=args.weights, solvers_to_run=args.solvers, clean=args.clean
+        weights=args.weights, solvers_to_run=args.solvers, clean=args.clean,
+        time_limit_cpsat=args.time_limit_cpsat
     )
