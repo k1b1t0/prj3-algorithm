@@ -78,7 +78,10 @@ class ProposedHCSMSolver(BaseSolver):
         )
 
         # Phase 3.1: Inter-Team Quotient Consolidation
-        team_tasks = consolidate_inter_team_quotients(team_tasks=team_tasks, teams=teams, skill_threshold=skill_thresh)
+        team_tasks = consolidate_inter_team_quotients(
+            team_tasks=team_tasks, teams=teams, skill_threshold=skill_thresh,
+            w_repo=self.w_repo, w_mod=self.w_mod, w_skill=self.w_skill
+        )
 
         # Phase 3.2: Intra-Team Exact Bitmask DP Open-TSP
         schedules: List[ScheduleResult] = []

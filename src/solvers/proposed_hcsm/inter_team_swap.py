@@ -1,21 +1,42 @@
 """
 Inter-Team Quotient Consolidation (Phase 3.1).
-Consolidates split super-nodes of same repo/module between teams via 2-exchange.
+Consolidates split super-nodes between teams via 1-0 Relocate and 1-1 Block Swap.
 Strictly no DAG logic, line limit < 200 lines.
 """
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 from models import Task, Team
 from metrics import evaluate_schedule_switch_cost
+from .block_tsp import sequence_team_tasks_block_tsp
+
+
+def _eval_team_cost(
+    tasks: List[Task],
+    w_repo: float = 0.5,
+    w_mod: float = 0.3,
+    w_skill: float = 0.2
+) -> float:
+    """Tinh chi phi chuyen doi ngu canh toi uu cua 1 doi tren cac khoi sieu dinh."""
+    if len(tasks) <= 1:
+        return 0.0
+    ordered, _ = sequence_team_tasks_block_tsp(
+        tasks, w_repo=w_repo, w_mod=w_mod, w_skill=w_skill
+    )
+    return evaluate_schedule_switch_cost(
+        ordered, w_repo=w_repo, w_mod=w_mod, w_skill=w_skill
+    )
 
 
 def consolidate_inter_team_quotients(
     team_tasks: Dict[str, List[Task]],
     teams: List[Team],
-    skill_threshold: float = 0.5
+    skill_threshold: float = 0.5,
+    w_repo: float = 0.5,
+    w_mod: float = 0.3,
+    w_skill: float = 0.2
 ) -> Dict[str, List[Task]]:
     """
-    Consolidate tasks of matching (repo, module) across teams if capacity allows
-    and context switch cost decreases without losing utility.
+    Tinh chinh lien doi bang 1-0 Relocate va 1-1 Block Swap de giam f2
+    ma khong lam suy giam f1 hay vi pham dung luong, ky nang.
     """
     team_map = {t.team_id: t for t in teams}
     team_ids = [t.team_id for t in teams]
@@ -25,70 +46,102 @@ def consolidate_inter_team_quotients(
     while improved and passes < 3:
         improved = False
         passes += 1
+        best_delta = -1e-4
+        best_move: Optional[Tuple[str, str, List[Task], List[Task]]] = None
 
         for i in range(len(team_ids)):
             for j in range(i + 1, len(team_ids)):
-                t1_id = team_ids[i]
-                t2_id = team_ids[j]
-                tm1 = team_map[t1_id]
-                tm2 = team_map[t2_id]
-
-                tasks1 = team_tasks[t1_id]
-                tasks2 = team_tasks[t2_id]
+                t1_id, t2_id = team_ids[i], team_ids[j]
+                tm1, tm2 = team_map[t1_id], team_map[t2_id]
+                tasks1, tasks2 = team_tasks[t1_id], team_tasks[t2_id]
                 if not tasks1 or not tasks2:
                     continue
 
-                # Group tasks by (repo, module) in team 1
-                group1: Dict[Tuple[str, str], List[Task]] = {}
+                curr_cost = (
+                    _eval_team_cost(tasks1, w_repo, w_mod, w_skill)
+                    + _eval_team_cost(tasks2, w_repo, w_mod, w_skill)
+                )
+
+                # Gom cac task cua moi doi theo khoi sieu dinh (repo, mod, skill)
+                g1: Dict[Tuple[str, str, str], List[Task]] = {}
                 for t in tasks1:
-                    group1.setdefault((t.repository, t.asset_module), []).append(t)
+                    g1.setdefault((t.repository, t.asset_module, t.skill), []).append(t)
 
-                # Group tasks by (repo, module) in team 2
-                group2: Dict[Tuple[str, str], List[Task]] = {}
+                g2: Dict[Tuple[str, str, str], List[Task]] = {}
                 for t in tasks2:
-                    group2.setdefault((t.repository, t.asset_module), []).append(t)
+                    g2.setdefault((t.repository, t.asset_module, t.skill), []).append(t)
 
-                # Look for common (repo, module) split between t1 and t2
-                common_keys = set(group1.keys()).intersection(set(group2.keys()))
-                for key in common_keys:
-                    sub1 = group1[key]
+                used1 = sum(t.e_i for t in tasks1)
+                used2 = sum(t.e_i for t in tasks2)
+
+                # 1. Thu Relocate 1-0: Chuyen khoi u tu t1 sang t2 (hoac nguoc lai)
+                for k1, sub1 in g1.items():
                     eff1 = sum(t.e_i for t in sub1)
-                    # Try moving sub1 from t1 to t2 if t2 has capacity & skills
-                    rem2 = tm2.capacity_sp - sum(t.e_i for t in tasks2)
-                    skill_ok2 = all(tm2.get_skill_score(t.skill) >= skill_threshold for t in sub1)
-
-                    if rem2 >= eff1 and skill_ok2:
-                        old_cost = evaluate_schedule_switch_cost(tasks1) + evaluate_schedule_switch_cost(tasks2)
+                    if used2 + eff1 <= tm2.capacity_sp and all(
+                        tm2.get_skill_score(t.skill) >= skill_threshold for t in sub1
+                    ):
                         cand1 = [t for t in tasks1 if t not in sub1]
                         cand2 = tasks2 + sub1
-                        new_cost = evaluate_schedule_switch_cost(cand1) + evaluate_schedule_switch_cost(cand2)
+                        d = (
+                            _eval_team_cost(cand1, w_repo, w_mod, w_skill)
+                            + _eval_team_cost(cand2, w_repo, w_mod, w_skill)
+                        ) - curr_cost
+                        if d < best_delta:
+                            best_delta = d
+                            best_move = (t1_id, t2_id, cand1, cand2)
 
-                        if new_cost < old_cost - 1e-4:
-                            team_tasks[t1_id] = cand1
-                            team_tasks[t2_id] = cand2
-                            improved = True
-                            break
-
-                    # Alternatively, try symmetric move: sub2 from t2 to t1
-                    sub2 = group2[key]
+                for k2, sub2 in g2.items():
                     eff2 = sum(t.e_i for t in sub2)
-                    rem1 = tm1.capacity_sp - sum(t.e_i for t in tasks1)
-                    skill_ok1 = all(tm1.get_skill_score(t.skill) >= skill_threshold for t in sub2)
-
-                    if rem1 >= eff2 and skill_ok1:
-                        old_cost = evaluate_schedule_switch_cost(tasks1) + evaluate_schedule_switch_cost(tasks2)
+                    if used1 + eff2 <= tm1.capacity_sp and all(
+                        tm1.get_skill_score(t.skill) >= skill_threshold for t in sub2
+                    ):
                         cand1 = tasks1 + sub2
                         cand2 = [t for t in tasks2 if t not in sub2]
-                        new_cost = evaluate_schedule_switch_cost(cand1) + evaluate_schedule_switch_cost(cand2)
+                        d = (
+                            _eval_team_cost(cand1, w_repo, w_mod, w_skill)
+                            + _eval_team_cost(cand2, w_repo, w_mod, w_skill)
+                        ) - curr_cost
+                        if d < best_delta:
+                            best_delta = d
+                            best_move = (t1_id, t2_id, cand1, cand2)
 
-                        if new_cost < old_cost - 1e-4:
-                            team_tasks[t1_id] = cand1
-                            team_tasks[t2_id] = cand2
-                            improved = True
-                            break
+                # 2. Thu Swap 1-1: Trao doi khoi u cua t1 voi khoi v cua t2
+                for k1, sub1 in g1.items():
+                    eff1 = sum(t.e_i for t in sub1)
+                    for k2, sub2 in g2.items():
+                        if k1 == k2:
+                            continue
+                        eff2 = sum(t.e_i for t in sub2)
+                        # Kiem tra dung luong bu tru ca 2 doi
+                        if (
+                            used1 - eff1 + eff2 > tm1.capacity_sp
+                            or used2 - eff2 + eff1 > tm2.capacity_sp
+                        ):
+                            continue
+                        # Kiem tra ky nang ca 2 doi
+                        if not all(
+                            tm1.get_skill_score(t.skill) >= skill_threshold for t in sub2
+                        ):
+                            continue
+                        if not all(
+                            tm2.get_skill_score(t.skill) >= skill_threshold for t in sub1
+                        ):
+                            continue
 
-                if improved:
-                    break
+                        cand1 = [t for t in tasks1 if t not in sub1] + sub2
+                        cand2 = [t for t in tasks2 if t not in sub2] + sub1
+                        d = (
+                            _eval_team_cost(cand1, w_repo, w_mod, w_skill)
+                            + _eval_team_cost(cand2, w_repo, w_mod, w_skill)
+                        ) - curr_cost
+                        if d < best_delta:
+                            best_delta = d
+                            best_move = (t1_id, t2_id, cand1, cand2)
+
+        if best_move is not None:
+            t1_id, t2_id, c1, c2 = best_move
+            team_tasks[t1_id] = c1
+            team_tasks[t2_id] = c2
+            improved = True
 
     return team_tasks
-
