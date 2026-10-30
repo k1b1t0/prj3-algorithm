@@ -81,6 +81,9 @@ def aggregate_static_metrics(
             if sol == "Proposed H-CSM" and hcsm_z05 and gls_z05:
                 p_val = compute_wilcoxon_pvalue(hcsm_z05, gls_z05, alternative="greater")
                 p_val_str = f"{p_val:.4f}{'*' if p_val < 0.05 else ''}"
+            elif sol == "Greedy-CVSS" and z050_v and gls_z05:
+                p_val = compute_wilcoxon_pvalue(z050_v, gls_z05, alternative="two-sided")
+                p_val_str = f"{p_val:.4f} (p>=0.05)" if p_val >= 0.05 else f"{p_val:.4f}*"
 
             summary_rows.append({
                 "Scenario": sc, "Solver": sol,

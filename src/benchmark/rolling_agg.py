@@ -14,6 +14,7 @@ def aggregate_rolling_scorecard(
 ) -> List[Dict[str, Any]]:
     gls_runs = solver_seed_results.get("Routing GLS", [])
     gls_auc = [r["auc_tve"] for r in gls_runs if r["completed"]]
+    gls_z = [r["total_z"] for r in gls_runs if r["completed"]]
     hcsm_runs = solver_seed_results.get("Proposed H-CSM", [])
     hcsm_auc = [r["auc_tve"] for r in hcsm_runs if r["completed"]]
 
@@ -48,7 +49,15 @@ def aggregate_rolling_scorecard(
             breaches = [r["total_breaches"] for r in completed]
             f2s = [r["total_f2"] for r in completed]
             zs = [r["total_z"] for r in completed]
-            p_val_str = p_val_auc_str if sol_name == "Proposed H-CSM" else ("Baseline" if sol_name == "Routing GLS" else "—")
+            if sol_name == "Proposed H-CSM":
+                p_val_str = p_val_auc_str
+            elif sol_name == "Routing GLS":
+                p_val_str = "Baseline"
+            elif sol_name == "Greedy-CVSS" and zs and gls_z:
+                p_val = compute_wilcoxon_pvalue(gls_z, zs, alternative="greater")
+                p_val_str = f"{p_val:.4f}* (GLS wins)" if p_val < 0.05 else f"{p_val:.4f}"
+            else:
+                p_val_str = "—"
             row = {
                 "Solver": sol_name,
                 "AUC_TVE": f"{np.mean(aucs):.1f} +/- {np.std(aucs):.1f}",
