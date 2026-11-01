@@ -22,7 +22,7 @@ class ORToolsRoutingHeuristicSolver(BaseSolver):
         name: str = "OR-Tools Routing (GLS)",
         time_limit_sec: float = 10.0,
         skill_threshold: float = 0.5,
-        scale: int = 1000
+        scale: int = 100_000
     ):
         super().__init__(name=name)
         self.time_limit_sec = time_limit_sec
