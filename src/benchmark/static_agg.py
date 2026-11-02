@@ -18,7 +18,7 @@ def aggregate_static_metrics(
     grouped: Dict[Tuple[str, str], Dict[str, List[Any]]] = defaultdict(lambda: defaultdict(list))
     for r in raw_runs:
         sc, sol, w = r["scenario"], r["solver"], r["weight_w"]
-        if r["status"] != "TIMEOUT":
+        if r.get("status") not in ["TIMEOUT", "UNKNOWN", "ERROR"]:
             grouped[(sc, sol)][f"f1_w{w}"].append(r["f1_utility"])
             grouped[(sc, sol)][f"f2_w{w}"].append(r["f2_switch_cost"])
             grouped[(sc, sol)][f"z_w{w}"].append(r["z_w"])
@@ -58,7 +58,7 @@ def aggregate_static_metrics(
             p_val_str = "—"
 
             if sol == "OR-Tools CP-SAT":
-                if not z050_v or all(s == "TIMEOUT" for s in sol_statuses):
+                if not z050_v or all(s in ["TIMEOUT", "UNKNOWN"] for s in sol_statuses):
                     gap_gain = "N/A (Timeout)"
                 elif is_cpsat_optimal:
                     gap_gain, p_val_str = "0.0% (Optimal)", "Gold Standard"

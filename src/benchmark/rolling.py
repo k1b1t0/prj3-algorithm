@@ -101,7 +101,7 @@ def run_benchmark_rolling(
                 bounds = compute_static_bounds(cur_backlog, teams_template, current_sprint=s)
                 plan, elapsed_ms = _step_solver(s_key_norm, cur_backlog, teams_template, s, cpsat_timeout_sec, gls_timeout_sec)
 
-                if s_key_norm == "cpsat" and ("UNKNOWN" in getattr(plan, "solver_status", "") or plan.execution_time_ms >= (cpsat_timeout_sec * 950)):
+                if s_key_norm == "cpsat" and (getattr(plan, "solver_status", "") in ["TIMEOUT", "UNKNOWN"] or "TIMEOUT" in plan.solver_name or plan.execution_time_ms >= (cpsat_timeout_sec * 950)):
                     timed_out_at = s
                     print(f"  [Sprint {s}] CP-SAT Exceeded Timeout Limit ({cpsat_timeout_sec}s) -> TERMINATED")
                     rec = {"seed": seed, "solver": s_name, "solver_key": s_key_norm, "sprint": s, "backlog_count": len(cur_backlog), "tve": 0.0, "breaches": 0, "f2": 0.0, "z_w": 0.0, "time_ms": elapsed_ms, "status": "TIMEOUT"}

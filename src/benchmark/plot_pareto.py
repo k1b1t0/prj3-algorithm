@@ -1,7 +1,11 @@
 """
 Ve do thi Pareto Frontier da muc tieu (Plan A: Static Benchmark).
 Bieu dien duong danh doi giua f1 (Loi ich giam thieu) va f2 (Chi phi chuyen doi).
-Tinh toan gia tri trung binh kem do lech chuan qua cac trong so w.
+Quet 11 trong so w in [0.0, 1.0] moi buoc 0.1.
+- Proposed H-CSM: Duong net lien (11 diem)
+- Routing GLS: Duong net dut (11 diem)
+- OR-Tools CP-SAT: Duong net cham gach (11 diem)
+- Greedy-CVSS: 1 diem don le duy nhat (marker X)
 """
 from pathlib import Path
 from typing import Dict, List, Any, Tuple
@@ -11,29 +15,50 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from benchmark.config import SOLVER_STYLES
+# Bang mau va style chuan cho 4 solvers
+SOLVER_PLOT_STYLES = {
+    "Proposed H-CSM": {
+        "color": "#1d4ed8", "marker": "o", "linestyle": "-", "linewidth": 2.2,
+        "label": "Proposed H-CSM", "zorder": 5, "markersize": 7
+    },
+    "Routing GLS": {
+        "color": "#ea580c", "marker": "s", "linestyle": "--", "linewidth": 2.0,
+        "label": "OR-Tools Routing (GLS)", "zorder": 4, "markersize": 6
+    },
+    "OR-Tools CP-SAT": {
+        "color": "#7c3aed", "marker": "d", "linestyle": "-.", "linewidth": 2.0,
+        "label": "OR-Tools CP-SAT (Exact)", "zorder": 6, "markersize": 7
+    },
+    "Greedy-CVSS": {
+        "color": "#dc2626", "marker": "X", "linestyle": "", "linewidth": 0,
+        "label": "Greedy-CVSS (Single point)", "zorder": 7, "markersize": 11
+    }
+}
 
 
 def plot_pareto_fronts_from_data(static_records: List[Dict[str, Any]], figures_dir: Path):
+    """Ve bieu do Pareto cho tung kich ban tu du lieu raw_runs.jsonl."""
     if not static_records:
         return
     figures_dir.mkdir(parents=True, exist_ok=True)
     scenarios = sorted(list(set(r["scenario"] for r in static_records)))
 
     for sc in scenarios:
-        sc_runs = [r for r in static_records if r["scenario"] == sc and r.get("status") != "TIMEOUT"]
+        sc_runs = [r for r in static_records if r["scenario"] == sc and r.get("status") not in ["TIMEOUT", "ERROR", "UNKNOWN"]]
         if not sc_runs:
             continue
-        fig, ax = plt.subplots(figsize=(9.0, 6.0), dpi=300)
+
+        fig, ax = plt.subplots(figsize=(8.5, 6.0), dpi=300)
 
         # Gom nhom theo solver va theo weight w
         solver_weight_data: Dict[str, Dict[float, List[Tuple[float, float]]]] = defaultdict(lambda: defaultdict(list))
         for r in sc_runs:
             sol = r["solver"]
-            w = float(r["weight_w"])
+            w = round(float(r["weight_w"]), 2)
             solver_weight_data[sol][w].append((r["f1_utility"], r["f2_switch_cost"]))
 
-        for solver_name, style in SOLVER_STYLES.items():
+        # 1. Ve cac duong Pareto cho 3 thuat toan co quet trong so w
+        for solver_name in ["Proposed H-CSM", "Routing GLS", "OR-Tools CP-SAT"]:
             if solver_name not in solver_weight_data:
                 continue
             w_dict = solver_weight_data[solver_name]
@@ -41,57 +66,54 @@ def plot_pareto_fronts_from_data(static_records: List[Dict[str, Any]], figures_d
             if not weights:
                 continue
 
-            pareto_pts = []
+            style = SOLVER_PLOT_STYLES[solver_name]
+            f1_means, f2_means = [], []
+
             for w in weights:
                 pts = w_dict[w]
-                f1_vals = [p[0] for p in pts]
-                f2_vals = [p[1] for p in pts]
-                m_f1, s_f1 = float(np.mean(f1_vals)), float(np.std(f1_vals))
-                m_f2, s_f2 = float(np.mean(f2_vals)), float(np.std(f2_vals))
-                pareto_pts.append({
-                    "w": w, "m_f1": m_f1, "s_f1": s_f1,
-                    "m_f2": m_f2, "s_f2": s_f2, "raw_f1": f1_vals, "raw_f2": f2_vals
-                })
+                f1_means.append(float(np.mean([p[0] for p in pts])))
+                f2_means.append(float(np.mean([p[1] for p in pts])))
 
-            # Sap xep theo f1 tang dan de ve duong bien Pareto chuan
-            pareto_pts.sort(key=lambda p: p["m_f1"])
-            f1_means = [p["m_f1"] for p in pareto_pts]
-            f2_means = [p["m_f2"] for p in pareto_pts]
-            f1_errs = [p["s_f1"] for p in pareto_pts]
-            f2_errs = [p["s_f2"] for p in pareto_pts]
-
-            # 1. Ve cac diem thuc nghiem thô (translucent raw points)
-            for p in pareto_pts:
-                ax.scatter(p["raw_f1"], p["raw_f2"], color=style["color"],
-                           alpha=0.18, s=28, marker=style["marker"], edgecolors="none")
-
-            # 2. Ve duong noi Pareto Frontier trung binh
-            if len(f1_means) > 1 and solver_name != "Greedy-CVSS":
-                ax.plot(f1_means, f2_means, color=style["color"], linestyle=style["linestyle"],
-                        linewidth=style["linewidth"], alpha=0.9, zorder=style["zorder"])
-
-            # 3. Ve cac diem trung binh kem error bar (Mean +/- Std)
-            ax.errorbar(
-                f1_means, f2_means, xerr=f1_errs, yerr=f2_errs,
-                fmt=style["marker"], color=style["color"], ecolor=style["color"],
-                elinewidth=1.2, capsize=3.5, capthick=1.2, markersize=8,
-                label=f"{style['label']} (Pareto)", zorder=style["zorder"] + 1, alpha=0.95
+            # Noi thang cac diem theo thu tu w tang dan
+            ax.plot(
+                f1_means, f2_means,
+                linestyle=style["linestyle"],
+                color=style["color"],
+                linewidth=style["linewidth"],
+                marker=style["marker"],
+                markersize=style["markersize"],
+                label=style["label"],
+                zorder=style["zorder"],
+                alpha=0.95
             )
 
-            # 4. Chu thich trong so w tren tung diem cua H-CSM
-            if solver_name == "Proposed H-CSM":
-                for p in pareto_pts:
-                    ax.annotate(
-                        f"w={p['w']:.2f}", (p["m_f1"], p["m_f2"]),
-                        textcoords="offset points", xytext=(8, -6),
-                        fontsize=8.5, fontweight="bold", color=style["color"]
-                    )
+        # 2. Ve 1 diem don le cho Greedy-CVSS (khong co duong noi vi khong phu thuoc w)
+        if "Greedy-CVSS" in solver_weight_data:
+            style = SOLVER_PLOT_STYLES["Greedy-CVSS"]
+            greedy_pts = []
+            for pts in solver_weight_data["Greedy-CVSS"].values():
+                greedy_pts.extend(pts)
+            if greedy_pts:
+                m_f1 = float(np.mean([p[0] for p in greedy_pts]))
+                m_f2 = float(np.mean([p[1] for p in greedy_pts]))
+                ax.scatter(
+                    [m_f1], [m_f2],
+                    color=style["color"],
+                    marker=style["marker"],
+                    s=style["markersize"] ** 2,
+                    label=style["label"],
+                    zorder=style["zorder"],
+                    edgecolors="#7f1d1d",
+                    linewidths=1.2
+                )
 
-        ax.set_title(f"Pareto Frontier: Security Utility ($f_1$) vs Context Switch Cost ($f_2$)\n[Scenario: {sc} | Mean $\\pm$ Std across Instances]", fontsize=11, fontweight="bold", pad=12)
-        ax.set_xlabel("Mitigated Security Utility $f_1$ (Higher is better $\\rightarrow$)", fontsize=10.5, fontweight="semibold")
-        ax.set_ylabel("Context Switch Cost $f_2$ (Lower is better $\\leftarrow$)", fontsize=10.5, fontweight="semibold")
-        ax.grid(True, linestyle="--", alpha=0.55)
-        ax.legend(frameon=True, facecolor="white", edgecolor="#e2e8f0", framealpha=0.95, fontsize=9.0)
+        ax.set_title(f"Bi-Objective Pareto Frontier — Scenario: {sc.upper()}", fontsize=12, fontweight="bold", pad=12)
+        ax.set_xlabel("Mitigated Utility ($f_1$) — Higher is Better $\\rightarrow$", fontsize=10.5, fontweight="semibold")
+        ax.set_ylabel("Context Switch Cost ($f_2$) — Lower is Better $\\leftarrow$", fontsize=10.5, fontweight="semibold")
+        ax.grid(True, linestyle=":", alpha=0.6)
+        ax.legend(frameon=True, facecolor="white", edgecolor="#cbd5e1", framealpha=0.95, fontsize=9.5, loc="best")
+
         fig.tight_layout()
-        fig.savefig(figures_dir / f"pareto_{sc}.png")
+        out_path = figures_dir / f"pareto_{sc}.png"
+        fig.savefig(out_path)
         plt.close(fig)

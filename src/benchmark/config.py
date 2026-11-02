@@ -10,7 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 # 1. Tham so dieu khien toan cuc
 DEFAULT_NUM_INSTANCES: int = 10
 DEFAULT_SCENARIOS: List[str] = ["small_40", "medium_100", "large_500"]
-DEFAULT_WEIGHTS: List[float] = [0.25, 0.50, 0.75]
+DEFAULT_WEIGHTS: List[float] = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 DEFAULT_SOLVERS: List[str] = ["hcsm", "gls", "cpsat", "greedy"]
 
 # 2. Tham so mo phong chuoi nhieu Sprint (Plan B)
@@ -32,13 +32,13 @@ SCENARIO_CONFIGS: Dict[str, Dict[str, Any]] = {
     "medium_100": {
         "n_tasks": 100,
         "n_teams": 4,
-        "time_limit_cpsat": 60.0,
+        "time_limit_cpsat": 10.0,
         "time_limit_gls": 3.0
     },
     "large_500": {
         "n_tasks": 500,
         "n_teams": 8,
-        "time_limit_cpsat": 60.0,
+        "time_limit_cpsat": 5.0,
         "time_limit_gls": 5.0
     },
 }

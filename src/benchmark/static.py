@@ -54,8 +54,6 @@ def run_benchmark_static(
     solvers_to_run: Optional[List[str]] = None,
     output_dir: Optional[Path] = None,
     current_sprint: int = 4,
-    skip_cpsat_medium: bool = True,
-    skip_cpsat_large: bool = True,
     clean: bool = True,
     time_limit_cpsat: Optional[float] = None
 ) -> Dict[str, Any]:
@@ -96,33 +94,36 @@ def run_benchmark_static(
 
             for s_key in solvers_to_run:
                 s_key_norm = s_key.lower().strip()
-                is_cpsat = s_key_norm in ["cpsat", "cpsat_exact", "exact"]
-                should_skip_cpsat = is_cpsat and (
-                    (sc == "large_500" and skip_cpsat_large) or
-                    (sc == "medium_100" and skip_cpsat_medium)
-                )
+                last_cpsat_timed_out = False
+                prev_cpsat_elapsed = 0.0
 
-                if should_skip_cpsat:
-                    for w in weights:
+                for w in weights:
+                    if s_key_norm in ["cpsat", "cpsat_exact", "exact"] and last_cpsat_timed_out:
                         rec = {
                             "scenario": sc, "instance_idx": inst_idx, "solver": "OR-Tools CP-SAT",
-                            "solver_key": "cpsat", "weight_w": w, "f1_utility": 0.0, "f2_switch_cost": 0.0,
-                            "z_w": 0.0, "execution_time_ms": cfg["time_limit_cpsat"] * 1000,
-                            "total_risk_resolved": 0.0, "assigned_task_count": 0,
+                            "solver_key": s_key_norm, "weight_w": w,
+                            "f1_utility": 0.0, "f2_switch_cost": 0.0,
+                            "z_w": 0.0, "execution_time_ms": prev_cpsat_elapsed,
+                            "total_risk_resolved": 0.0,
+                            "assigned_task_count": 0,
                             "deferred_task_count": len(tasks), "status": "TIMEOUT"
                         }
                         raw_runs.append(rec)
                         with open(raw_path, "a", encoding="utf-8") as f:
                             f.write(json.dumps(rec) + "\n")
-                    print(f"  [{sc} | Inst {inst_idx}] CP-SAT: Skipped (Combinatorial explosion -> TIMEOUT)")
-                    continue
+                        print(f"  [{sc} | Inst {inst_idx}] {'OR-Tools CP-SAT':<18} (w={w:.2f}) -> [TIMEOUT confirmed from prior weight]")
+                        continue
 
-                for w in weights:
                     plan, s_name, elapsed_ms = _solve_for_weight(
                         s_key_norm, tasks, teams, w, bounds, cfg, current_sprint, cpsat_tl=time_limit_cpsat
                     )
                     z_val = bounds.compute_z(plan.total_utility_resolved, plan.total_switch_cost, w)
                     status = getattr(plan, "solver_status", "FEASIBLE")
+
+                    if s_key_norm in ["cpsat", "cpsat_exact", "exact"] and status in ["TIMEOUT", "UNKNOWN"]:
+                        last_cpsat_timed_out = True
+                        prev_cpsat_elapsed = elapsed_ms
+                        status = "TIMEOUT"
 
                     rec = {
                         "scenario": sc, "instance_idx": inst_idx, "solver": s_name,

@@ -24,9 +24,11 @@ def load_jsonl(path: Path) -> List[Dict[str, Any]]:
 
 def plot_all_benchmarks(figures_dir: Path):
     r_file = PROJECT_ROOT / "outputs" / "rolling" / "rolling_runs.jsonl"
+    p_file = PROJECT_ROOT / "outputs" / "figures" / "pareto_runs.jsonl"
     s_file = PROJECT_ROOT / "outputs" / "static" / "raw_runs.jsonl"
     plot_rolling_line_charts(load_jsonl(r_file), figures_dir)
-    plot_pareto_fronts_from_data(load_jsonl(s_file), figures_dir)
+    source_pareto = p_file if p_file.exists() else s_file
+    plot_pareto_fronts_from_data(load_jsonl(source_pareto), figures_dir)
 
 
 __all__ = [

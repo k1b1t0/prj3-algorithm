@@ -169,9 +169,9 @@ class CPSATExactSolver(BaseSolver):
         if status not in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
             empty = [ScheduleResult(team_id=tm.team_id, assigned_tasks=[], total_effort=0, context_switch_cost=0.0) for tm in teams]
             plan = evaluate_sprint_plan(tasks, empty, teams_dict, current_sprint=current_sprint)
-            plan.solver_name = f"{self.name} ({status_name})"
+            plan.solver_name = f"{self.name} (TIMEOUT)"
             plan.execution_time_ms = exec_time_ms
-            setattr(plan, "solver_status", status_name)
+            setattr(plan, "solver_status", "TIMEOUT")
             return plan
 
         schedules = _extract_schedules(solver, tasks, teams, x, z, pos, id_to_idx, N, M, eligible_tasks)
