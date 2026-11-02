@@ -1,11 +1,4 @@
-# Mô Hình Toán Học Hình Thức: MO-MILP Lập Lịch SecOps Đa Mục Tiêu
-
-> **Bản chất bài toán**: Quy hoạch nguyên số hỗn hợp đa mục tiêu (**Multi-Objective Mixed-Integer Linear Programming — MO-MILP**).  
-> **Cấu trúc bài toán**: Tích hợp đồng thời bài toán Đóng gói ba lô đa dung lượng (**Multiple Knapsack Problem**) với bài toán Người du lịch hành trình hở (**Open Traveling Salesperson Problem — Open-TSP**) trên không gian chi phí chuyển đổi ngữ cảnh phân cấp.
-
----
-
-### Bảng Ký Hiệu Toán Học (Nomenclature)
+## Bảng Ký Hiệu Toán Học (Nomenclature)
 
 | Nhóm | Ký hiệu | Miền giá trị / Đơn vị | Ý nghĩa tóm tắt |
 | :--- | :--- | :--- | :--- |
@@ -25,9 +18,10 @@
 
 ## 1. Không Gian Biến Quyết Định (Decision Variables)
 
-Cho tập backlog $N$ lỗ hổng $\mathcal{V} = \{1, 2, \dots, N\}$ và $M$ đội kỹ thuật $T = \{1, 2, \dots, M\}$.
-
-Bổ sung cặp đỉnh ảo $\{S, E\}$ (bắt đầu và kết thúc) với chi phí chuyển đổi bằng 0: $C_{S, i} = C_{i, E} = C_{S, E} = 0$.
+- Backlog $N$ lỗ hổng $\mathcal{V} = \{1, 2, \dots, N\}$ 
+- $M$ đội kỹ thuật $T = \{1, 2, \dots, M\}$.
+- Bổ sung cặp đỉnh ảo $\{S, E\}$ (bắt đầu và kết thúc)
+   - $C_{S, i} = C_{i, E} = C_{S, E} = 0$.
 
 1. **Biến phân bổ (Assignment Variable)**:
    $$x_{it} \in \{0, 1\} \quad \forall i \in \mathcal{V}, \forall t \in T$$
@@ -60,7 +54,7 @@ Khi một đội chuyển tiếp từ task $i$ sang task $j$, chi phí hao tổn
 $$C_{ij} = w_{\text{repo}} \cdot \mathbb{I}(\text{repo}_i \neq \text{repo}_j) + w_{\text{mod}} \cdot \mathbb{I}(\text{mod}_i \neq \text{mod}_j) + w_{\text{skill}} \cdot \mathbb{I}(\text{skill}_i \neq \text{skill}_j)$$
 
 - Trọng số chuẩn hóa: $w_{\text{repo}} + w_{\text{mod}} + w_{\text{skill}} = 1.0$ (với $w_{\text{repo}}, w_{\text{mod}}, w_{\text{skill}} \ge 0$).
-  - Giá trị mặc định: $w_{\text{repo}} = 0.5$, $w_{\text{mod}} = 0.3$, $w_{\text{skill}} = 0.2$. Cặp task cùng repo, cùng module, cùng skill có $C_{ij} = 0.0$.
+  - Giá trị mặc định: $w_{\text{repo}} = 0.5$, $w_{\text{mod}} = 0.3$, $w_{\text{skill}} = 0.2$.
 
 ---
 
@@ -121,17 +115,3 @@ Mỗi đội $t$ sở hữu một chuỗi thực thi tuyến tính hở $\pi_t$ 
    - Mỗi bước chuyển tiếp giữa 2 task $i \to j$ làm tăng số thứ tự vị trí ít nhất 1 đơn vị:
      $$pos_{jt} \ge pos_{it} + 1 - |\mathcal{V}| \cdot (1 - z_{i, j, t}) \quad \forall i, j \in \mathcal{V} (i \neq j), \forall t \in T$$
      $$x_{it} \le pos_{it} \le |\mathcal{V}| \cdot x_{it} \quad \forall i \in \mathcal{V}, \forall t \in T$$
-
----
-
-## 5. Phân Tích Độ Phức Tạp & Điểm Nghẽn Tính Toán
-
-1. **Bản chất NP-hard**:
-   - Bài toán là sự kết hợp của Multiple 0-1 Knapsack (chọn tập tối ưu $x_{it}$) và Open-TSP đa phương tiện (định tuyến chuỗi $z_{ijt}$).
-2. **Bùng nổ tổ hợp của Bộ giải Chính xác (Exact Solvers / CP-SAT)**:
-   - Số lượng biến nhị phân chuỗi chuyển tiếp: $M \times N \times (N - 1) = O(M \cdot N^2)$.
-   - Với quy mô nhỏ ($N=40, M=2$): $\approx 3.120$ biến $z_{ijt}$ $\implies$ CP-SAT giải tối ưu trong $\approx 15\text{ s}$.
-   - Với quy mô lớn ($N=500, M=8$): $\approx 2.000.000$ biến nhị phân $z_{ijt}$ cùng hàng triệu ràng buộc MTZ $\implies$ CP-SAT bị tràn bộ nhớ và timeout ($> 90\text{ s}$ không ra nghiệm).
-3. **Động lực ra đời của Thuật toán Đề xuất H-CSM**:
-   - Tách bài toán thành các pha phân cấp: Gom cụm nguyên tử $C_{ij} = 0$ để nén không gian tìm kiếm, đóng gói Pareto và giải Open-TSP trên các khối siêu đỉnh (Super-Nodes $B \le 10$) bằng Quy hoạch động Bitmask DP trong thời gian vài mili-giây.
-

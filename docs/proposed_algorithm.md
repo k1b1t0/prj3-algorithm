@@ -1,25 +1,22 @@
-# Thuật Toán Đề Xuất: H-CSM (Hierarchical Cluster-Simulate-Match)
-
-> **Mục tiêu**: Lập lịch phân bổ và định tuyến chuỗi xử lý lỗ hổng bảo mật cho nhiều đội kỹ thuật trong Sprint Agile, tối ưu hóa đồng thời Lợi ích an ninh ($f_1$) và Chi phí chuyển đổi ngữ cảnh ($f_2$).  
-> **Nguyên lý cốt lõi**: Phân cụm nguyên tử dựa trên quan hệ $C_{ij} = 0$, kết hợp Quy hoạch động 1 chiều nội cụm (Exact 1D Knapsack DP), Phân bổ đa lựa chọn khấu hao chi phí chèn đường đi (Cheapest Path Insertion), và Định tuyến chuỗi cụm bằng Bitmask DP.
-
----
-
 ## 1. Kiến Trúc 3 Pha Tổng Quát
 
-Thuật toán H-CSM vận hành qua 3 pha nối tiếp:
-- **Pha 1 (Phân cụm & Quy hoạch động nội cụm)**: Gom các task cùng Repo, Module, Skill thành các cụm nguyên tử ($C_{ij} = 0$), sau đó dùng 1D Knapsack DP lập trước bảng giá trị tối ưu $\Phi_b(c)$ cho từng mức dung lượng $c \in [1, \text{cap}_{\max}]$.
-- **Pha 2 (Phân bổ đa lựa chọn & Chèn đường đi)**: Lần lượt chọn cụm, mức dung lượng và đội $(b, c, t)$ có hiệu suất biên $\eta$ cao nhất, tự động khấu hao chi phí chuyển đổi đường đi.
-- **Pha 3 (Hoán đổi liên đội & Định tuyến Bitmask DP)**: Tinh chỉnh hoán đổi cụm giữa các đội để gom gọn repo, sau đó giải chính xác thứ tự thực thi Open-TSP trong từng đội bằng Bitmask DP.
+- **Pha 1 (Phân cụm & Quy hoạch động nội cụm)**: 
+   - Gom các task cùng Repo, Module, Skill thành các cụm nguyên tử ($C_{ij} = 0$)
+   - Knapsack DP lập trước bảng giá trị tối ưu $\Phi_b(c)$ cho từng mức dung lượng $c \in [1, \text{cap}_{\max}]$.
+- **Pha 2 (Phân bổ đa lựa chọn & Chèn đường đi)**: 
+   - Lần lượt chọn cụm, mức dung lượng và đội $(b, c, t)$ có hiệu suất biên $\eta$ cao nhất.
+- **Pha 3 (Hoán đổi liên đội & Định tuyến Bitmask DP)**: 
+   - Tinh chỉnh hoán đổi cụm giữa các đội để gom gọn repo
+   - Xếp thứ tự trong đội bằng Bitmask DP.
 
 ---
 
 ## 2. Chi Tiết Logic Toán Học Từng Pha
 
-### Pha 1: Phân Cụm Ngữ Cảnh & Quy Hoạch Động Nội Cụm (Clustering & 1D DP Profiling)
+### Pha 1: Phân Cụm Ngữ Cảnh & Quy Hoạch Động Nội Cụm (Clustering & 1D DP)
 
 1. **Phân cụm nguyên tử (Atomic Clustering)**:
-   Các task có $C_{ij} = 0$ (cùng Repo, Module, Skill) được gom thành $B$ cụm $\mathcal{G} = \{G_1, G_2, \dots, G_B\}$ ($B \ll N$). Chi phí chuyển đổi giữa các task bên trong cùng một cụm luôn bằng $0$.
+   Các task có $C_{ij} = 0$ (cùng Repo, Module, Skill) được gom thành $B$ cụm $\mathcal{G} = \{G_1, G_2, \dots, G_B\}$ ($B \ll N$).
 2. **Quy hoạch động 1 chiều nội cụm (Exact 1D Knapsack DP)**:
    Với mỗi cụm $G_b$ và mỗi mức dung lượng $c \in \{1, \dots, \text{cap}_{\max}\}$, ta dùng thuật toán Quy hoạch động 1 chiều (1D DP) để tìm tập con task tối ưu $S^*_b(c) \subseteq G_b$ mang lại tổng điểm ưu tiên lớn nhất:
    $$\Phi_b(c) = \max_{S \subseteq G_b} \left\{ \sum_{i \in S} u_i \;\middle\vert{}\; \sum_{i \in S} e_i \le c \right\}$$
@@ -54,13 +51,3 @@ Mỗi đội $t$ duy trì một chuỗi các cụm hiện tại $\pi_t = (b_1, b
    - *Bên trong từng cụm*: Sắp xếp các task theo mật độ $u_i / e_i$ giảm dần.
 
 ---
-
-## 3. Phân Tích Độ Phức Tạp & Hiệu Năng
-
-| Thành Phần Thuật Toán | Độ Phức Tạp Lý Thuyết | Thời Gian Thực Tế ($N=500, M=8$) |
-| :--- | :---: | :---: |
-| **Pha 1 (Phân cụm & 1D DP)** | $O(N \cdot \text{cap}_{\max})$ | $\approx 0.5\text{ ms}$ |
-| **Pha 2 (Phân bổ chèn đường đi)** | $O(B \cdot \text{cap}_{\max} \cdot M)$ | $\approx 15\text{ ms}$ |
-| **Pha 3 (Hoán đổi & Bitmask DP TSP)** | $O(M \cdot 2^K \cdot K^2)$ ($K \le 10$) | $\approx 2.5\text{ ms}$ |
-| **Tổng thể 1 lượt chạy H-CSM ($w$ cố định)** | **$O(N \cdot \text{cap}_{\max} + B \cdot \text{cap}_{\max} \cdot M + M \cdot 2^K \cdot K^2)$** | **$< 25\text{ ms}$** |
-| **Quét toàn bộ mặt cong Pareto (21 giá trị $w$)** | **$21 \times \text{Runtime}$** | **$< 0.5\text{ giây}$** |
