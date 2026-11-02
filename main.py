@@ -3,8 +3,9 @@ Diem vao CLI tap trung cho toan bo thuc nghiem SecOps Vulnerability Scheduling.
 Commands:
   python main.py static     - Chay Plan A: Static Snapshot Benchmark
   python main.py rolling    - Chay Plan B: Multi-Sprint Rolling Benchmark
+  python main.py ablation   - Chay Ablation Study danh gia 5 bien the bóc tách
   python main.py inspect    - Kiem toan 1 instance chi tiet voi Phase Logger
-  python main.py plot       - Xuat toan bo bieu do (4 Line Charts & Pareto Fronts)
+  python main.py plot       - Xuat toan bo bieu do (Line Charts & Pareto Fronts)
   python main.py test       - Chay toan bo Unit Tests
 """
 import argparse
@@ -44,7 +45,7 @@ def run_inspect(scenario: str, instance_idx: int, solver_key: str, weight_w: flo
 
     if s_norm in ["proposed", "hcsm", "proposed_hcsm"]:
         plan = ProposedHCSMSolver().solve(
-            tasks, teams, current_sprint=4, w=weight_w, bounds=bounds, verbose=True, detailed=detailed
+            tasks, teams, current_sprint=4, w=weight_w, bounds=bounds
         )
     elif s_norm in ["greedy", "greedy_cvss"]:
         plan = GreedyCVSSSolver().solve(tasks, teams, current_sprint=4)
@@ -72,7 +73,6 @@ def main():
     sub_static.add_argument("--weights", nargs="+", type=float, default=DEFAULT_WEIGHTS)
     sub_static.add_argument("--solvers", nargs="+", default=DEFAULT_SOLVERS)
     sub_static.add_argument("--clean", action="store_true", default=True)
-    sub_static.add_argument("--skip-cpsat-medium", action="store_true", default=True)
     sub_static.add_argument("--time-limit-cpsat", type=float, default=None)
 
     sub_rolling = sub.add_parser("rolling", help="Run Plan B: Multi-Sprint Rolling Benchmark")
@@ -82,12 +82,22 @@ def main():
     sub_rolling.add_argument("--solvers", nargs="+", default=DEFAULT_SOLVERS)
     sub_rolling.add_argument("--clean", action="store_true", default=True)
 
+    sub_ablation = sub.add_parser("ablation", help="Run Ablation Study (6 variants on static scenarios)")
+    sub_ablation.add_argument("--scenarios", nargs="+", default=DEFAULT_SCENARIOS)
+    sub_ablation.add_argument("--instances", type=int, default=DEFAULT_NUM_INSTANCES)
+    sub_ablation.add_argument("--weight", type=float, default=0.50)
+
     sub_insp = sub.add_parser("inspect", help="Inspect single instance with PhaseLogger")
     sub_insp.add_argument("--scenario", default="small_40", choices=["small_40", "medium_100", "large_500"])
     sub_insp.add_argument("--instance", type=int, default=1)
     sub_insp.add_argument("--solver", default="proposed")
     sub_insp.add_argument("--weight", type=float, default=0.50)
     sub_insp.add_argument("--detailed", action="store_true", default=True)
+
+    sub_pareto = sub.add_parser("pareto", help="Run Bi-Objective Pareto Frontier sweep (11 weights)")
+    sub_pareto.add_argument("--scenarios", nargs="+", default=["small_40", "medium_100", "large_500"])
+    sub_pareto.add_argument("--instances", type=int, default=1)
+    sub_pareto.add_argument("--output-dir", default=str(PROJECT_ROOT / "outputs" / "figures"))
 
     sub_plot = sub.add_parser("plot", help="Generate publication-ready figures")
     sub_plot.add_argument("--output-dir", default=str(PROJECT_ROOT / "outputs" / "figures"))
@@ -101,17 +111,27 @@ def main():
         run_benchmark_static(
             scenarios=args.scenarios, instances_count=args.instances,
             weights=args.weights, solvers_to_run=args.solvers, clean=args.clean,
-            skip_cpsat_medium=args.skip_cpsat_medium, time_limit_cpsat=args.time_limit_cpsat
+            time_limit_cpsat=args.time_limit_cpsat
         )
     elif args.command == "rolling":
         run_benchmark_rolling(
             seeds=args.seeds, num_sprints=args.sprints,
             tasks_per_sprint=args.tasks_per_sprint, solvers_to_run=args.solvers, clean=args.clean
         )
+    elif args.command == "ablation":
+        from ablation import run_ablation_experiments
+        run_ablation_experiments(
+            scenarios=args.scenarios, instances_count=args.instances, weight_w=args.weight
+        )
     elif args.command == "inspect":
         run_inspect(
             scenario=args.scenario, instance_idx=args.instance,
             solver_key=args.solver, weight_w=args.weight, detailed=args.detailed
+        )
+    elif args.command == "pareto":
+        from benchmark.pareto_sweep import run_pareto_sweep
+        run_pareto_sweep(
+            scenarios=args.scenarios, instances_count=args.instances, output_dir=Path(args.output_dir)
         )
     elif args.command == "plot":
         plot_all_benchmarks(Path(args.output_dir))
