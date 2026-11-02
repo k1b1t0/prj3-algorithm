@@ -4,6 +4,10 @@ from models import Task, Team, ScheduleResult, SprintPlan
 from bounds import ObjectiveBounds, compute_static_bounds
 
 
+# ==============================================================================
+# NHOM 1: CAC HAM VAT LY & KHOANG CACH (Dung ca khi giai toan va cham diem)
+# ==============================================================================
+
 def compute_context_distance(
     task_a: Task,
     task_b: Task,
@@ -12,9 +16,9 @@ def compute_context_distance(
     w_skill: float = 0.2
 ) -> float:
     """
-    Context switch distance between two tasks: C_ij in [0, 1].
+    Khoang cach / chi phi chuyen doi ngu canh giua 2 task: C_ij in [0, 1].
     C_ij = w_repo * I(repo_a != repo_b) + w_mod * I(mod_a != mod_b) + w_skill * I(skill_a != skill_b).
-    C_ij = 0 iff same Repo, same Module, and same Skill.
+    C_ij = 0 khi va chi khi cung Repo, cung Module, va cung Skill.
     """
     if task_a.id == task_b.id:
         return 0.0
@@ -30,7 +34,7 @@ def compute_mitigation_utility(
     alpha: float = 0.6,
     m_penalty: float = 0.0
 ) -> float:
-    """Dynamic Mitigation Utility u_i in (0, 1]."""
+    """Diem uu tien giam nhe rui ro dong u_i in (0, 1]."""
     return task.compute_utility(current_sprint=current_sprint, alpha=alpha, m_penalty=m_penalty)
 
 
@@ -40,7 +44,7 @@ def evaluate_schedule_switch_cost(
     w_mod: float = 0.3,
     w_skill: float = 0.2
 ) -> float:
-    """Compute total context switch cost on a sequence of tasks: sum C_{pi_k, pi_{k+1}}."""
+    """Tinh tong chi phi chuyen doi tren mot chuoi cong viec cua doi: sum C_{pi_k, pi_{k+1}}."""
     if len(tasks) <= 1:
         return 0.0
     cost = 0.0
@@ -49,13 +53,9 @@ def evaluate_schedule_switch_cost(
     return round(cost, 4)
 
 
-def compute_skill_match_score(tasks: List[Task], team: Team) -> float:
-    """Average team competency on assigned tasks."""
-    if not tasks:
-        return 1.0
-    scores = [team.get_skill_score(t.skill) for t in tasks]
-    return round(float(np.mean(scores)), 4)
-
+# ==============================================================================
+# NHOM 2: HAM DONG GOI & DANH GIA NGHIEM (EVALUATOR)
+# ==============================================================================
 
 def evaluate_sprint_plan(
     all_backlog_tasks: List[Task],
@@ -68,22 +68,24 @@ def evaluate_sprint_plan(
     execution_time_ms: float = 0.0,
     trace_details: Optional[Dict[str, Any]] = None
 ) -> SprintPlan:
-    """Consolidate and evaluate metrics for SprintPlan."""
+    """
+    Tong hop va cham diem toan bo SprintPlan:
+    - Tra ve 2 muc tieu cot loi: f1 (mitigation utility) va f2 (context switch cost).
+    - Tach danh sach task thanh viec duoc lam (assigned) va viec bi hoan (deferred).
+    - Ghi nhan runtime execution_time_ms do tu solver.
+    """
     task_to_team: Dict[int, str] = {}
     total_switch_cost = 0.0
     total_assigned_tasks: List[Task] = []
-    sms_weighted_sum = 0.0
 
     updated_schedules: List[ScheduleResult] = []
     for sch in schedules:
-        team = teams_dict[sch.team_id]
         total_switch_cost += sch.context_switch_cost
 
         sch_utility = 0.0
         for t in sch.assigned_tasks:
             task_to_team[t.id] = sch.team_id
             total_assigned_tasks.append(t)
-            sms_weighted_sum += team.get_skill_score(t.skill)
             sch_utility += t.compute_utility(current_sprint=current_sprint, alpha=alpha, m_penalty=m_penalty)
 
         updated_schedules.append(ScheduleResult(
@@ -107,8 +109,6 @@ def evaluate_sprint_plan(
         sum(t.compute_utility(current_sprint=current_sprint, alpha=alpha, m_penalty=m_penalty) for t in deferred_tasks), 2
     )
 
-    sms = round(sms_weighted_sum / len(total_assigned_tasks), 4) if total_assigned_tasks else 0.0
-
     return SprintPlan(
         schedules=updated_schedules,
         deferred_tasks=deferred_tasks,
@@ -117,15 +117,18 @@ def evaluate_sprint_plan(
         total_risk_deferred=total_risk_deferred,
         total_utility_deferred=total_utility_deferred,
         total_switch_cost=round(total_switch_cost, 4),
-        skill_match_score=sms,
         solver_name=solver_name,
         execution_time_ms=execution_time_ms,
         trace_details=trace_details or {}
     )
 
 
+# ==============================================================================
+# NHOM 3: CONG CU PHAN TICH THUC NGHIEM & PARETO (Phuc vu viet bai bao / benchmark)
+# ==============================================================================
+
 def extract_pareto_front(points: List[Tuple[float, float]]) -> List[Tuple[float, float]]:
-    """Non-dominated Pareto Front extraction (Maximize f1, Minimize f2)."""
+    """Trich xuat tap nghiem khong bi troi (Pareto Front): Maximize f1, Minimize f2."""
     if not points:
         return []
     unique_points = sorted(list(set(points)), key=lambda p: (p[0], -p[1]))
@@ -147,7 +150,7 @@ def compute_hypervolume(
     pareto_points: List[Tuple[float, float]],
     ref_point: Tuple[float, float]
 ) -> float:
-    """Compute 2D Hypervolume bounded by Pareto Front and ref_point."""
+    """Tinh dien tich bao phu Hypervolume 2D giua Pareto Front va diem tham chieu ref_point."""
     front = extract_pareto_front(pareto_points)
     if not front:
         return 0.0
@@ -176,8 +179,8 @@ def compute_wilcoxon_pvalue(
     alternative: str = "greater"
 ) -> float:
     """
-    Compute Wilcoxon Signed-Rank Test p-value between paired scores.
-    Returns p-value in [0.0, 1.0].
+    Kiem dinh thong ke phi tham so Wilcoxon Signed-Rank Test giua 2 bo diem paired.
+    Tra ve p-value in [0.0, 1.0].
     """
     if len(scores_proposed) != len(scores_baseline) or len(scores_proposed) < 3:
         return 1.0

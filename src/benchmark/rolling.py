@@ -11,7 +11,7 @@ from typing import Dict, List, Any, Optional
 from bounds import compute_static_bounds
 from dataset.teams import get_standard_teams
 from solvers.greedy_cvss import GreedyCVSSSolver
-from solvers.cpsat_exact import CPSATExactSolver
+from solvers.ortools_cpsat import CPSATExactSolver
 from solvers.ortools_routing import ORToolsRoutingSolver
 from solvers.proposed_hcsm.solver import ProposedHCSMSolver
 from benchmark.config import (

@@ -127,24 +127,30 @@ class ORToolsRoutingHeuristicSolver(BaseSolver):
 
         # Search Parameters: Parallel Cheapest Insertion + Guided Local Search
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+        # Pha 1: Khoi tao nghiem ban dau bang chen tham lam song song
         search_parameters.first_solution_strategy = (
             routing_enums_pb2.FirstSolutionStrategy.PARALLEL_CHEAPEST_INSERTION
         )
+        # Pha 2: Metaheuristic Guided Local Search (GLS) lien tuc dao viec de thoat cuc tieu dia phuong
         search_parameters.local_search_metaheuristic = (
             routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
         )
         search_parameters.time_limit.seconds = int(max(1, round(time_limit)))
 
+        # Chay bo giai
         solution = routing.SolveWithParameters(search_parameters)
         exec_time_ms = round((time.perf_counter() - t0) * 1000, 2)
 
+        # Trich xuat chuoi hanh trinh va dong goi SprintPlan
         schedules: List[ScheduleResult] = []
         if solution:
+            # Duyet qua tung xe (doi) de lay chuoi task theo NextVar
             for v_idx, tm in enumerate(teams):
                 index = routing.Start(v_idx)
                 route_tasks: List[Task] = []
                 while not routing.IsEnd(index):
                     node = manager.IndexToNode(index)
+                    # Chi lay cac node task thuc (node < N), bo qua dinh ao start/end
                     if node < N:
                         route_tasks.append(tasks[node])
                     index = solution.Value(routing.NextVar(index))
@@ -161,6 +167,7 @@ class ORToolsRoutingHeuristicSolver(BaseSolver):
                     context_switch_cost=round(cost, 4)
                 ))
         else:
+            # Truong hop khong tim ra nghiem kha thi
             schedules = [
                 ScheduleResult(team_id=tm.team_id, assigned_tasks=[], total_effort=0, context_switch_cost=0.0)
                 for tm in teams

@@ -1,7 +1,7 @@
 """
 Baseline 1: Greedy-CVSS / Greedy-Utility.
 1. Sap xep Backlog giam dan theo Mitigation Utility u_i (neu use_utility=True) hoac CVSS r_i.
-2. Duyet tuan tu: gan cho team dau tien dat nguong skill (>= 0.5) va con du Story Points.
+2. Duyet tuan tu: gan cho team dau tien dat nguong skill va con du Story Points.
 """
 import time
 from typing import List, Dict, Optional

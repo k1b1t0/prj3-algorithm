@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from models import Task, Team
 from solvers.greedy_cvss import GreedyCVSSSolver
-from solvers.cpsat_exact import CPSATExactSolver
+from solvers.ortools_cpsat import CPSATExactSolver
 from solvers.ortools_routing import ORToolsRoutingSolver
 
 

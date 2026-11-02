@@ -3,9 +3,6 @@ Module quan ly va tinh toan Can Chuan Hoa (Objective Bounds) cho bai toan Da Muc
 - f1: Mitigation Utility (Loi ich giam nhe rui ro)
 - f2: Context Switch Cost (Chi phi chuyen doi ngu canh)
 - Z(w) = w * norm(f1) - (1 - w) * norm(f2) voi w in [0.0, 1.0]
-
-Su dung duy nhat Co Che Chuan:
-Can Tinh Toan Hoc (Static Mathematical Bounds) tinh nhanh tu Fractional Knapsack va tran dung luong.
 """
 from dataclasses import dataclass
 from typing import List, Optional

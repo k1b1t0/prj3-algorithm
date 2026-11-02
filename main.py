@@ -19,7 +19,7 @@ from bounds import compute_static_bounds
 from dataset.benchmark_loader import generate_scenario_instance
 from solvers.proposed_hcsm.solver import ProposedHCSMSolver
 from solvers.greedy_cvss import GreedyCVSSSolver
-from solvers.cpsat_exact import CPSATExactSolver
+from solvers.ortools_cpsat import CPSATExactSolver
 from solvers.ortools_routing import ORToolsRoutingSolver
 from benchmark.config import (
     DEFAULT_NUM_INSTANCES, DEFAULT_SCENARIOS, DEFAULT_WEIGHTS,
