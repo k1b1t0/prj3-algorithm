@@ -18,6 +18,8 @@ def aggregate_static_metrics(
     grouped: Dict[Tuple[str, str], Dict[str, List[Any]]] = defaultdict(lambda: defaultdict(list))
     for r in raw_runs:
         sc, sol, w = r["scenario"], r["solver"], r["weight_w"]
+        if sol in ["Proposed H-CSM", "Proposed-H-CSM", "Proposed-CAS"]:
+            sol = "Proposed CAS"
         if r.get("status") not in ["TIMEOUT", "UNKNOWN", "ERROR"]:
             grouped[(sc, sol)][f"f1_w{w}"].append(r["f1_utility"])
             grouped[(sc, sol)][f"f2_w{w}"].append(r["f2_switch_cost"])
@@ -26,7 +28,7 @@ def aggregate_static_metrics(
         grouped[(sc, sol)]["status"].append(r["status"])
 
     summary_rows: List[Dict[str, Any]] = []
-    order = ["OR-Tools CP-SAT", "Proposed H-CSM", "Routing GLS", "Greedy-CVSS"]
+    order = ["OR-Tools CP-SAT", "Proposed CAS", "Routing GLS", "Greedy-CVSS"]
 
     for sc in scenarios:
         cpsat_z05 = grouped.get((sc, "OR-Tools CP-SAT"), {}).get("z_w0.5", [])
@@ -36,7 +38,7 @@ def aggregate_static_metrics(
 
         gls_z05 = grouped.get((sc, "Routing GLS"), {}).get("z_w0.5", [])
         gls_mean = float(np.mean(gls_z05)) if gls_z05 else 0.0
-        hcsm_z05 = grouped.get((sc, "Proposed H-CSM"), {}).get("z_w0.5", [])
+        cas_z05 = grouped.get((sc, "Proposed CAS"), {}).get("z_w0.5", [])
 
         for sol in order:
             if (sc, sol) not in grouped:
@@ -78,8 +80,8 @@ def aggregate_static_metrics(
                 elif not z050_v:
                     gap_gain = "N/A (Timeout)"
 
-            if sol == "Proposed H-CSM" and hcsm_z05 and gls_z05:
-                p_val = compute_wilcoxon_pvalue(hcsm_z05, gls_z05, alternative="greater")
+            if sol == "Proposed CAS" and cas_z05 and gls_z05:
+                p_val = compute_wilcoxon_pvalue(cas_z05, gls_z05, alternative="greater")
                 p_val_str = f"{p_val:.4f}{'*' if p_val < 0.05 else ''}"
             elif sol == "Greedy-CVSS" and z050_v and gls_z05:
                 p_val = compute_wilcoxon_pvalue(z050_v, gls_z05, alternative="two-sided")

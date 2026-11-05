@@ -9,9 +9,9 @@ Kiem chung vai tro cua phep chia c trong viec tim Diem uon toi uu (Optimal Knee 
 from typing import List, Dict, Tuple, Optional
 from models import Task, Team
 from bounds import ObjectiveBounds
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
-from solvers.proposed_hcsm.clustering_dp import Cluster
-from solvers.proposed_hcsm.path_insertion import compute_path_insertion_cost
+from solvers.proposed_cas.solver import ProposedCASSolver
+from solvers.proposed_cas.clustering_dp import Cluster
+from solvers.proposed_cas.path_insertion import compute_path_insertion_cost
 
 
 def allocate_clusters_no_amortization(
@@ -92,7 +92,7 @@ def allocate_clusters_no_amortization(
     return team_tasks
 
 
-class V4NoAmortizationSolver(ProposedHCSMSolver):
+class V4NoAmortizationSolver(ProposedCASSolver):
     """Bien the V4: Bo chia cho dung luong c trong cong thuc eta (eta = gain)."""
 
     def __init__(self, name: str = "V4", **kwargs):

@@ -1,5 +1,5 @@
 """
-Goi ablation: Thuc nghiem boc tach danh gia dong gop doc lap cua cac thanh phan H-CSM.
+Goi ablation: Thuc nghiem boc tach danh gia dong gop doc lap cua cac thanh phan CAS (Cluster-Assign-Sequence).
 He thong 6 bien the can doi 2-2-2 qua 3 pha:
 - Pha 1: V1 (w/o Atomic Clustering: B = N), V2 (w/o 1D Knapsack DP: Greedy)
 - Pha 2: V3 (w/o Path-Awareness: Delta C = 0), V4 (w/o Amortization: unamortized eta)

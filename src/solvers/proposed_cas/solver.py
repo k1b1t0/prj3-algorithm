@@ -1,5 +1,5 @@
 """
-Thuat toan de xuat: H-CSM (Hierarchical Capacitated Cluster-Simulate-Match).
+Thuat toan de xuat: CAS (Cluster-Assign-Sequence).
 Kien truc dieu phoi 3 pha:
 - Pha 1: Phan cum nguyen tu C_ij = 0 va lap bang 1D DP (clustering_dp.py).
 - Pha 2: Phan bo da lua chon tich hop chen duong di re nhat (allocation.py, path_insertion.py).
@@ -18,12 +18,12 @@ from .inter_team_swap import swap_inter_team_clusters
 from .task_sequencing import sequence_team_tasks
 
 
-class ProposedHCSMSolver(BaseSolver):
-    """Bo giai dieu phoi chinh cua thuat toan H-CSM."""
+class ProposedCASSolver(BaseSolver):
+    """Bo giai dieu phoi chinh cua thuat toan CAS (Cluster-Assign-Sequence)."""
 
     def __init__(
         self,
-        name: str = "Proposed-H-CSM",
+        name: str = "Proposed-CAS",
         skill_threshold: float = 0.5,
         default_w: float = 0.5,
         w_repo: float = 0.5,
@@ -150,6 +150,11 @@ class ProposedHCSMSolver(BaseSolver):
         return plan
 
 
-def solve_hcsm(tasks: List[Task], teams: List[Team], current_sprint: int = 4, w: float = 0.5, **kwargs) -> SprintPlan:
-    """Ham bọc tien ich goi truc tiep ProposedHCSMSolver.solve()."""
-    return ProposedHCSMSolver(**kwargs).solve(tasks, teams, current_sprint=current_sprint, w=w)
+def solve_cas(tasks: List[Task], teams: List[Team], current_sprint: int = 4, w: float = 0.5, **kwargs) -> SprintPlan:
+    """Ham boc tien ich goi truc tiep ProposedCASSolver.solve()."""
+    return ProposedCASSolver(**kwargs).solve(tasks, teams, current_sprint=current_sprint, w=w)
+
+
+# Backward compatibility aliases
+ProposedHCSMSolver = ProposedCASSolver
+solve_hcsm = solve_cas

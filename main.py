@@ -18,7 +18,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from bounds import compute_static_bounds
 from dataset.benchmark_loader import generate_scenario_instance
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
+from solvers.proposed_cas.solver import ProposedCASSolver, ProposedHCSMSolver
 from solvers.greedy_cvss import GreedyCVSSSolver
 from solvers.ortools_cpsat import CPSATExactSolver
 from solvers.ortools_routing import ORToolsRoutingSolver
@@ -43,8 +43,8 @@ def run_inspect(scenario: str, instance_idx: int, solver_key: str, weight_w: flo
     bounds = compute_static_bounds(tasks, teams, current_sprint=4)
     s_norm = solver_key.lower().strip()
 
-    if s_norm in ["proposed", "hcsm", "proposed_hcsm"]:
-        plan = ProposedHCSMSolver().solve(
+    if s_norm in ["proposed", "cas", "hcsm", "proposed_cas", "proposed_hcsm"]:
+        plan = ProposedCASSolver().solve(
             tasks, teams, current_sprint=4, w=weight_w, bounds=bounds
         )
     elif s_norm in ["greedy", "greedy_cvss"]:
@@ -90,7 +90,7 @@ def main():
     sub_insp = sub.add_parser("inspect", help="Inspect single instance with PhaseLogger")
     sub_insp.add_argument("--scenario", default="small_40", choices=["small_40", "medium_100", "large_500"])
     sub_insp.add_argument("--instance", type=int, default=1)
-    sub_insp.add_argument("--solver", default="proposed")
+    sub_insp.add_argument("--solver", default="cas")
     sub_insp.add_argument("--weight", type=float, default=0.50)
     sub_insp.add_argument("--detailed", action="store_true", default=True)
 

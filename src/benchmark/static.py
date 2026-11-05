@@ -13,7 +13,7 @@ from dataset.benchmark_loader import generate_scenario_instance
 from solvers.greedy_cvss import GreedyCVSSSolver
 from solvers.ortools_cpsat import CPSATExactSolver
 from solvers.ortools_routing import ORToolsRoutingSolver
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
+from solvers.proposed_cas.solver import ProposedCASSolver
 from benchmark.config import (
     PROJECT_ROOT, SCENARIO_CONFIGS, DEFAULT_NUM_INSTANCES,
     DEFAULT_SCENARIOS, DEFAULT_WEIGHTS, DEFAULT_SOLVERS
@@ -23,9 +23,9 @@ from benchmark.static_agg import aggregate_static_metrics, print_static_summary_
 
 def _solve_for_weight(solver_key, tasks, teams, w, bounds, cfg, current_sprint, cpsat_tl=None):
     t_start = time.perf_counter()
-    if solver_key in ["hcsm", "proposed_hcsm", "proposed"]:
-        plan = ProposedHCSMSolver().solve(tasks, teams, current_sprint=current_sprint, w=w, bounds=bounds)
-        name = "Proposed H-CSM"
+    if solver_key in ["cas", "proposed_cas", "hcsm", "proposed_hcsm", "proposed"]:
+        plan = ProposedCASSolver().solve(tasks, teams, current_sprint=current_sprint, w=w, bounds=bounds)
+        name = "Proposed CAS"
     elif solver_key in ["gls", "routing", "ortools_routing"]:
         plan = ORToolsRoutingSolver(time_limit_sec=cfg["time_limit_gls"]).solve(
             tasks, teams, current_sprint=current_sprint, w=w, bounds=bounds

@@ -6,10 +6,10 @@ Kiem chung vai tro hoan thien hau ky cua toan bo Pha 3 doi voi giai thuat de xua
 """
 from typing import List, Dict
 from models import Task, Team
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
+from solvers.proposed_cas.solver import ProposedCASSolver
 
 
-class V6TwoPhaseOnlySolver(ProposedHCSMSolver):
+class V6TwoPhaseOnlySolver(ProposedCASSolver):
     """Bien the V6: Dung ngay sau Pha 2, bo qua ca Pha 3.1 va Pha 3.2."""
 
     def __init__(self, name: str = "V6", **kwargs):

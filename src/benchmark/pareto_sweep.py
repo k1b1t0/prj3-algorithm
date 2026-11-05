@@ -18,7 +18,7 @@ from dataset.benchmark_loader import generate_scenario_instance
 from solvers.greedy_cvss import GreedyCVSSSolver
 from solvers.ortools_cpsat import CPSATExactSolver
 from solvers.ortools_routing import ORToolsRoutingSolver
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
+from solvers.proposed_cas.solver import ProposedCASSolver
 from benchmark.config import PROJECT_ROOT, SCENARIO_CONFIGS
 from benchmark.plot_pareto import plot_pareto_fronts_from_data
 
@@ -72,16 +72,16 @@ def run_pareto_sweep(
             pareto_records.append(rec_greedy)
             print(f"  [{sc}] Greedy-CVSS: f1={rec_greedy['f1_utility']}, f2={rec_greedy['f2_switch_cost']}")
 
-            # 2. Proposed H-CSM: Quet 11 diem w
-            print(f"  [{sc}] Sweeping Proposed H-CSM (11 weights)...")
-            hcsm_solver = ProposedHCSMSolver()
+            # 2. Proposed CAS: Quet 11 diem w
+            print(f"  [{sc}] Sweeping Proposed CAS (11 weights)...")
+            cas_solver = ProposedCASSolver()
             for w in PARETO_WEIGHTS:
                 t0 = time.perf_counter()
-                plan = hcsm_solver.solve(tasks, teams, current_sprint=current_sprint, w=w, bounds=bounds)
+                plan = cas_solver.solve(tasks, teams, current_sprint=current_sprint, w=w, bounds=bounds)
                 el = round((time.perf_counter() - t0) * 1000, 2)
                 z = bounds.compute_z(plan.total_utility_resolved, plan.total_switch_cost, w)
                 pareto_records.append({
-                    "scenario": sc, "instance_idx": inst_idx, "solver": "Proposed H-CSM",
+                    "scenario": sc, "instance_idx": inst_idx, "solver": "Proposed CAS",
                     "weight_w": w, "f1_utility": round(plan.total_utility_resolved, 2),
                     "f2_switch_cost": round(plan.total_switch_cost, 4),
                     "z_w": round(z, 4), "execution_time_ms": el, "status": "FEASIBLE"
@@ -153,16 +153,16 @@ def run_pareto_sweep(
         for sc in scenarios:
             f.write(f"### Kịch Bản: `{sc}`\n\n")
             f.write(f"![Pareto Frontier {sc}](pareto_{sc}.png)\n\n")
-            f.write("| Trọng số $w$ | Proposed H-CSM ($f_1, f_2$) | Routing GLS ($f_1, f_2$) | OR-Tools CP-SAT ($f_1, f_2$) |\n")
+            f.write("| Trọng số $w$ | Proposed CAS ($f_1, f_2$) | Routing GLS ($f_1, f_2$) | OR-Tools CP-SAT ($f_1, f_2$) |\n")
             f.write("| :---: | :---: | :---: | :---: |\n")
 
             sc_recs = [r for r in pareto_records if r["scenario"] == sc]
-            hcsm_by_w = {r["weight_w"]: r for r in sc_recs if r["solver"] == "Proposed H-CSM"}
+            cas_by_w = {r["weight_w"]: r for r in sc_recs if r["solver"] in ["Proposed CAS", "Proposed H-CSM"]}
             gls_by_w = {r["weight_w"]: r for r in sc_recs if r["solver"] == "Routing GLS"}
             cpsat_by_w = {r["weight_w"]: r for r in sc_recs if r["solver"] == "OR-Tools CP-SAT" and r["status"] != "TIMEOUT"}
 
             for w in PARETO_WEIGHTS:
-                h = hcsm_by_w.get(w)
+                h = cas_by_w.get(w)
                 g = gls_by_w.get(w)
                 c = cpsat_by_w.get(w)
 

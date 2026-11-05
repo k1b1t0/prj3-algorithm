@@ -127,7 +127,7 @@ class SprintPlan:
     total_utility_deferred: float    # Tong utility bi hoan
     total_switch_cost: float         # Muc tieu f2: Tong chi phi chuyen doi cua ca Sprint
     skill_match_score: float = 1.0   # Chi so phu (giu de tuong thich cu)
-    solver_name: str = ""            # Ten thuat toan giai (HCSM, CP-SAT, Greedy, ...)
+    solver_name: str = ""            # Ten thuat toan giai (CAS, CP-SAT, Greedy, ...)
     execution_time_ms: float = 0.0   # Thoi gian chay (mili-giay)
     trace_details: Dict[str, Any] = field(default_factory=dict)
 

@@ -39,6 +39,15 @@ def plot_rolling_line_charts(records: List[Dict[str, Any]], figures_dir: Path):
         return
     figures_dir.mkdir(parents=True, exist_ok=True)
     plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
+
+    # Normalize solver names
+    norm_records = []
+    for r in records:
+        rc = dict(r)
+        if rc.get("solver") in ["Proposed H-CSM", "Proposed-H-CSM", "Proposed-CAS"]:
+            rc["solver"] = "Proposed CAS"
+        norm_records.append(rc)
+    records = norm_records
     sprints = sorted(list(set(r["sprint"] for r in records)))
 
     # 1. Individual figures

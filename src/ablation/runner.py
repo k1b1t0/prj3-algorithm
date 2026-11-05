@@ -1,6 +1,6 @@
 """
 File dieu phoi chay toan bo thuc nghiem boc tach Ablation Study.
-Chay 7 cau hinh (Full H-CSM va 6 bien the V1 - V6) tren 3 kich ban tinh tai w = 0.50.
+Chay 7 cau hinh (Full CAS va 6 bien the V1 - V6) tren 3 kich ban tinh tai w = 0.50.
 """
 import time
 from pathlib import Path
@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional
 from bounds import compute_static_bounds
 from dataset.benchmark_loader import generate_scenario_instance
 from benchmark.config import PROJECT_ROOT, SCENARIO_CONFIGS, DEFAULT_SCENARIOS, DEFAULT_NUM_INSTANCES
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
+from solvers.proposed_cas.solver import ProposedCASSolver
 from .v1_no_clustering import V1NoClusteringSolver
 from .v2_no_dp import V2NoDPSolver
 from .v3_no_path_aware import V3NoPathAwareSolver
@@ -33,7 +33,7 @@ def run_ablation_experiments(
 
     # Danh sach 7 cau hinh tham gia boc tach (Full H-CSM + 6 bien the)
     solvers = [
-        ProposedHCSMSolver(name="Full H-CSM"),
+        ProposedCASSolver(name="Full CAS"),
         V1NoClusteringSolver(),
         V2NoDPSolver(),
         V3NoPathAwareSolver(),

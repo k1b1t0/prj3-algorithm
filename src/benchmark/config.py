@@ -11,7 +11,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_NUM_INSTANCES: int = 10
 DEFAULT_SCENARIOS: List[str] = ["small_40", "medium_100", "large_500"]
 DEFAULT_WEIGHTS: List[float] = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-DEFAULT_SOLVERS: List[str] = ["hcsm", "gls", "cpsat", "greedy"]
+DEFAULT_SOLVERS: List[str] = ["cas", "gls", "cpsat", "greedy"]
 
 # 2. Tham so mo phong chuoi nhieu Sprint (Plan B)
 DEFAULT_ROLLING_SEEDS: List[int] = [42, 100, 2024, 777, 999, 101, 202, 303, 404, 505]
@@ -45,9 +45,13 @@ SCENARIO_CONFIGS: Dict[str, Dict[str, Any]] = {
 
 # 4. Dinh dang do hoa publication-ready
 SOLVER_STYLES: Dict[str, Dict[str, Any]] = {
+    "Proposed CAS": {
+        "color": "#1d4ed8", "marker": "s", "linestyle": "-", "linewidth": 2.5,
+        "label": "Proposed CAS", "alpha_fill": 0.15, "zorder": 5
+    },
     "Proposed H-CSM": {
         "color": "#1d4ed8", "marker": "s", "linestyle": "-", "linewidth": 2.5,
-        "label": "Proposed H-CSM", "alpha_fill": 0.15, "zorder": 5
+        "label": "Proposed CAS", "alpha_fill": 0.15, "zorder": 5
     },
     "Routing GLS": {
         "color": "#059669", "marker": "o", "linestyle": "--", "linewidth": 2.0,

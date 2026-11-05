@@ -7,8 +7,8 @@ Kiem chung tac dung kiem che f2 va chong phan manh cong viec cua co che chen duo
 from typing import List, Dict, Tuple, Optional
 from models import Task, Team
 from bounds import ObjectiveBounds
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
-from solvers.proposed_hcsm.clustering_dp import Cluster
+from solvers.proposed_cas.solver import ProposedCASSolver
+from solvers.proposed_cas.clustering_dp import Cluster
 
 
 def allocate_clusters_no_path_aware(
@@ -72,7 +72,7 @@ def allocate_clusters_no_path_aware(
     return team_tasks
 
 
-class V3NoPathAwareSolver(ProposedHCSMSolver):
+class V3NoPathAwareSolver(ProposedCASSolver):
     """Bien the V3: Dat Delta C = 0 trong Pha 2 (khong tinh chi phi chen duong di)."""
 
     def __init__(self, name: str = "V3", **kwargs):

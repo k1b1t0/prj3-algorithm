@@ -5,11 +5,11 @@ Kiem chung vai tro cua Khong gian thuong trong viec giam so luong thuc the va kh
 """
 from typing import List
 from models import Task
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
-from solvers.proposed_hcsm.clustering_dp import Cluster
+from solvers.proposed_cas.solver import ProposedCASSolver
+from solvers.proposed_cas.clustering_dp import Cluster
 
 
-class V1NoClusteringSolver(ProposedHCSMSolver):
+class V1NoClusteringSolver(ProposedCASSolver):
     """Bien the V1: B = N (khong gom cum nguyen tu C_ij = 0 o Pha 1)."""
 
     def __init__(self, name: str = "V1", **kwargs):

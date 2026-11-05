@@ -17,9 +17,13 @@ import matplotlib.pyplot as plt
 
 # Bang mau va style chuan cho 4 solvers
 SOLVER_PLOT_STYLES = {
+    "Proposed CAS": {
+        "color": "#1d4ed8", "marker": "o", "linestyle": "-", "linewidth": 2.2,
+        "label": "Proposed CAS", "zorder": 5, "markersize": 7
+    },
     "Proposed H-CSM": {
         "color": "#1d4ed8", "marker": "o", "linestyle": "-", "linewidth": 2.2,
-        "label": "Proposed H-CSM", "zorder": 5, "markersize": 7
+        "label": "Proposed CAS", "zorder": 5, "markersize": 7
     },
     "Routing GLS": {
         "color": "#ea580c", "marker": "s", "linestyle": "--", "linewidth": 2.0,
@@ -54,11 +58,13 @@ def plot_pareto_fronts_from_data(static_records: List[Dict[str, Any]], figures_d
         solver_weight_data: Dict[str, Dict[float, List[Tuple[float, float]]]] = defaultdict(lambda: defaultdict(list))
         for r in sc_runs:
             sol = r["solver"]
+            if sol in ["Proposed H-CSM", "Proposed-H-CSM", "Proposed-CAS"]:
+                sol = "Proposed CAS"
             w = round(float(r["weight_w"]), 2)
             solver_weight_data[sol][w].append((r["f1_utility"], r["f2_switch_cost"]))
 
         # 1. Ve cac duong Pareto cho 3 thuat toan co quet trong so w
-        for solver_name in ["Proposed H-CSM", "Routing GLS", "OR-Tools CP-SAT"]:
+        for solver_name in ["Proposed CAS", "Routing GLS", "OR-Tools CP-SAT"]:
             if solver_name not in solver_weight_data:
                 continue
             w_dict = solver_weight_data[solver_name]

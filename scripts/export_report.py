@@ -17,7 +17,12 @@ def load_csv_rows(path: Path) -> List[Dict[str, str]]:
         return []
     with open(path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        return list(reader)
+        rows = list(reader)
+        for r in rows:
+            for k in ["Solver", "solver", "Variant", "variant"]:
+                if k in r and r[k] in ["Proposed H-CSM", "Full H-CSM", "Proposed-H-CSM"]:
+                    r[k] = r[k].replace("H-CSM", "CAS")
+        return rows
 
 
 def format_static_terminal(rows: List[Dict[str, str]]) -> str:

@@ -6,10 +6,10 @@ Kiem chung dong gop doc lap cua viec hoan doi cum giua hai doi trong viec keo gi
 """
 from typing import List, Dict
 from models import Task, Team
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
+from solvers.proposed_cas.solver import ProposedCASSolver
 
 
-class V5NoSwapSolver(ProposedHCSMSolver):
+class V5NoSwapSolver(ProposedCASSolver):
     """Bien the V5: Bo qua Pha 3.1 hoan doi cum lien doi."""
 
     def __init__(self, name: str = "V5", **kwargs):

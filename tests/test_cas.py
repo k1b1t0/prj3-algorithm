@@ -1,5 +1,5 @@
 """
-Unit tests for ProposedHCSMSolver theo kien truc 3 pha H-CSM:
+Unit tests for ProposedCASSolver theo kien truc 3 pha CAS (Cluster-Assign-Sequence):
 1. Phase 1: Phan cum nguyen tu C_ij = 0 va lap bang 1D Knapsack DP profiling (clustering_dp.py).
 2. Phase 2: Phan bo da lua chon tich hop chen duong di re nhat (allocation.py, path_insertion.py).
 3. Phase 3: Hoan doi cum lien doi (inter_team_swap.py) va Dinh tuyen Bitmask DP Open-TSP (task_sequencing.py).
@@ -17,13 +17,13 @@ from models import Task, Team, ScheduleResult, SprintPlan
 from bounds import compute_static_bounds
 from metrics import evaluate_schedule_switch_cost
 from solvers.base import BaseSolver
-from solvers.proposed_hcsm.clustering_dp import partition_clusters, Cluster
-from solvers.proposed_hcsm.allocation import allocate_clusters_to_teams
-from solvers.proposed_hcsm.task_sequencing import sequence_team_tasks
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver, solve_hcsm
+from solvers.proposed_cas.clustering_dp import partition_clusters, Cluster
+from solvers.proposed_cas.allocation import allocate_clusters_to_teams
+from solvers.proposed_cas.task_sequencing import sequence_team_tasks
+from solvers.proposed_cas.solver import ProposedCASSolver, solve_cas, ProposedHCSMSolver, solve_hcsm
 
 
-class TestHCSM(unittest.TestCase):
+class TestCAS(unittest.TestCase):
     def setUp(self):
         self.teams = [
             Team(
@@ -103,8 +103,8 @@ class TestHCSM(unittest.TestCase):
         )
 
     def test_solver_full_pipeline(self):
-        """Kiem tra toan bo luong ProposedHCSMSolver."""
-        solver = ProposedHCSMSolver(skill_threshold=0.5, default_w=0.5)
+        """Kiem tra toan bo luong ProposedCASSolver."""
+        solver = ProposedCASSolver(skill_threshold=0.5, default_w=0.5)
         self.assertIsInstance(solver, BaseSolver)
 
         plan = solver.solve(self.tasks, self.teams, current_sprint=4)
@@ -115,17 +115,20 @@ class TestHCSM(unittest.TestCase):
             tm = next(t for t in self.teams if t.team_id == sch.team_id)
             self.assertLessEqual(sch.total_effort, tm.capacity_sp)
 
-    def test_solve_hcsm_wrapper_and_sweep_w(self):
-        """Kiem tra goi solve_hcsm nhieu lan voi cac gia tri w khac nhau."""
+    def test_solve_cas_wrapper_and_sweep_w(self):
+        """Kiem tra goi solve_cas nhieu lan voi cac gia tri w khac nhau."""
         for w_val in [0.2, 0.5, 1.0]:
-            plan = solve_hcsm(self.tasks, self.teams, current_sprint=4, w=w_val)
+            plan = solve_cas(self.tasks, self.teams, current_sprint=4, w=w_val)
             self.assertGreater(plan.total_utility_resolved, 0.0)
             self.assertGreaterEqual(plan.total_switch_cost, 0.0)
+            # Kiem tra alias solve_hcsm
+            plan_alias = solve_hcsm(self.tasks, self.teams, current_sprint=4, w=w_val)
+            self.assertEqual(plan.total_utility_resolved, plan_alias.total_utility_resolved)
 
     def test_ablation_subclass_override(self):
-        """Kiem tra viec tao class con ke thua ProposedHCSMSolver de lam ablation study."""
+        """Kiem tra viec tao class con ke thua ProposedCASSolver de lam ablation study."""
         # Class con bo qua buoc hoan doi lien doi (Pha 3.1)
-        class NoSwapSolver(ProposedHCSMSolver):
+        class NoSwapSolver(ProposedCASSolver):
             def run_phase3_swap(self, team_tasks, teams, skill_thresh):
                 return team_tasks  # Khong lam gi ca
 

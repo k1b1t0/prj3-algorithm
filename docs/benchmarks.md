@@ -37,14 +37,14 @@
 | Kịch bản | Thuật toán | $f_1$ ($\uparrow$) | $f_2$ ($\downarrow$) | $Z(0.50)$ ($\uparrow$) | Runtime (ms) ($\downarrow$) | Gap / Gain vs GLS |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
 | **`small_40`** | OR-Tools CP-SAT | TBD | TBD | TBD | TBD | Mốc chuẩn (60s) |
-| | Proposed H-CSM | TBD | TBD | TBD | TBD | TBD |
+| | Proposed CAS | TBD | TBD | TBD | TBD | TBD |
 | | Routing GLS | TBD | TBD | TBD | TBD | Baseline |
 | | Greedy-CVSS | TBD | TBD | TBD | TBD | TBD |
-| **`medium_100`** | Proposed H-CSM | TBD | TBD | TBD | TBD | TBD |
+| **`medium_100`** | Proposed CAS | TBD | TBD | TBD | TBD | TBD |
 | | Routing GLS | TBD | TBD | TBD | TBD | Baseline |
 | | OR-Tools CP-SAT | — | — | — | Timeout (>60s) | N/A |
 | | Greedy-CVSS | TBD | TBD | TBD | TBD | TBD |
-| **`large_500`** | Proposed H-CSM | TBD | TBD | TBD | TBD | TBD |
+| **`large_500`** | Proposed CAS | TBD | TBD | TBD | TBD | TBD |
 | | Routing GLS | TBD | TBD | TBD | TBD | Baseline |
 | | OR-Tools CP-SAT | — | — | — | Timeout / OOM | N/A |
 | | Greedy-CVSS | TBD | TBD | TBD | TBD | TBD |
@@ -67,7 +67,7 @@ Mô phỏng chu trình làm việc Agile qua 8 Sprint ($s = 1, \dots, 8$):
 
 | Thuật toán | $\text{AUC-TVE}$ ($\downarrow$) | $\text{Total Breaches}$ ($\downarrow$) | $\text{Total } f_2$ ($\downarrow$) | $\text{Total } Z(0.5)$ ($\uparrow$) | Xếp hạng Chung |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Proposed H-CSM** | TBD | TBD | TBD | TBD | TBD |
+| **Proposed CAS** | TBD | TBD | TBD | TBD | TBD |
 | **Routing GLS** | TBD | TBD | TBD | TBD | TBD |
 | **Greedy-CVSS** | TBD | TBD | TBD | TBD | TBD |
 | **OR-Tools CP-SAT** | N/A | N/A | N/A | N/A | Timeout |

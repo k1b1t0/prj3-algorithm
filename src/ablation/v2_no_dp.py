@@ -7,8 +7,8 @@ Kiem chung loi ich cua viec giai chinh xac Knapsack 1D doi voi f1 va chong nghen
 from typing import List, Dict, Tuple
 from dataclasses import dataclass
 from models import Task
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
-from solvers.proposed_hcsm.clustering_dp import Cluster
+from solvers.proposed_cas.solver import ProposedCASSolver
+from solvers.proposed_cas.clustering_dp import Cluster
 
 
 @dataclass
@@ -42,7 +42,7 @@ class GreedyCluster(Cluster):
         self.dp_profile = profile
 
 
-class V2NoDPSolver(ProposedHCSMSolver):
+class V2NoDPSolver(ProposedCASSolver):
     """Bien the V2: Thay the 1D Knapsack DP bang phuong phap nhat tham lam."""
 
     def __init__(self, name: str = "V2", **kwargs):

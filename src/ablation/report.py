@@ -26,11 +26,14 @@ def generate_ablation_reports(raw_runs: List[Dict[str, Any]], output_dir: Path) 
     # 2. Tinh toan Mean +/- Std theo (scenario, variant_name)
     grouped: Dict[str, Dict[str, List[Dict[str, Any]]]] = defaultdict(lambda: defaultdict(list))
     for r in raw_runs:
-        grouped[r["scenario"]][r["variant"]].append(r)
+        v = r["variant"]
+        if v in ["Full H-CSM", "Full CAS"]:
+            v = "Full CAS"
+        grouped[r["scenario"]][v].append(r)
 
     scenarios = sorted(grouped.keys())
     summary_rows: List[Dict[str, Any]] = []
-    variant_order = ["Full H-CSM", "V1", "V2", "V3", "V4", "V5", "V6"]
+    variant_order = ["Full CAS", "V1", "V2", "V3", "V4", "V5", "V6"]
 
     for sc in scenarios:
         for v_name in variant_order:
@@ -99,7 +102,7 @@ def generate_ablation_reports(raw_runs: List[Dict[str, Any]], output_dir: Path) 
                 z_str = rank_format(r["z_mean"], f"{r['z_mean']} ± {r['z_std']}", z_ranked)
                 t_str = rank_format(r["time_mean_ms"], f"{r['time_mean_ms']} ± {r['time_std_ms']}", t_ranked)
 
-                v_label = f"**{r['variant']}**" if r["variant"] == "Full H-CSM" else r["variant"]
+                v_label = f"**{r['variant']}**" if r["variant"] in ["Full CAS", "Full H-CSM"] else r["variant"]
                 f.write(f"| {v_label} | {f1_str} | {f2_str} | {z_str} | {t_str} |\n")
             f.write("\n---\n\n")
 

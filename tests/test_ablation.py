@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from dataset.benchmark_loader import generate_scenario_instance
 from bounds import compute_static_bounds
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
+from solvers.proposed_cas.solver import ProposedCASSolver
 from ablation import (
     V1NoClusteringSolver,
     V2NoDPSolver,
@@ -30,7 +30,7 @@ class TestAblationVariants(unittest.TestCase):
 
     def test_all_variants_produce_valid_plans(self):
         solvers = [
-            ProposedHCSMSolver(),
+            ProposedCASSolver(),
             V1NoClusteringSolver(),
             V2NoDPSolver(),
             V3NoPathAwareSolver(),

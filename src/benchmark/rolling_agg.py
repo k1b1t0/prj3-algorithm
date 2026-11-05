@@ -12,19 +12,23 @@ def aggregate_rolling_scorecard(
     solver_seed_results: Dict[str, List[Dict[str, Any]]],
     output_path: Path
 ) -> List[Dict[str, Any]]:
+    # Normalize historical names
+    if "Proposed H-CSM" in solver_seed_results and "Proposed CAS" not in solver_seed_results:
+        solver_seed_results["Proposed CAS"] = solver_seed_results["Proposed H-CSM"]
+
     gls_runs = solver_seed_results.get("Routing GLS", [])
     gls_auc = [r["auc_tve"] for r in gls_runs if r["completed"]]
     gls_z = [r["total_z"] for r in gls_runs if r["completed"]]
-    hcsm_runs = solver_seed_results.get("Proposed H-CSM", [])
-    hcsm_auc = [r["auc_tve"] for r in hcsm_runs if r["completed"]]
+    cas_runs = solver_seed_results.get("Proposed CAS", [])
+    cas_auc = [r["auc_tve"] for r in cas_runs if r["completed"]]
 
     p_val_auc_str = "—"
-    if hcsm_auc and gls_auc and len(hcsm_auc) == len(gls_auc):
-        p_val = compute_wilcoxon_pvalue(hcsm_auc, gls_auc, alternative="less")
+    if cas_auc and gls_auc and len(cas_auc) == len(gls_auc):
+        p_val = compute_wilcoxon_pvalue(cas_auc, gls_auc, alternative="less")
         p_val_auc_str = f"{p_val:.4f}{'*' if p_val < 0.05 else ''}"
 
     display_order = [
-        ("Proposed H-CSM", "Rank 1"),
+        ("Proposed CAS", "Rank 1"),
         ("Routing GLS", "Rank 2 (Baseline)"),
         ("Greedy-CVSS", "Rank 3"),
         ("OR-Tools CP-SAT", "Incomplete (Timeout)")

@@ -50,9 +50,9 @@ class TestModelsAndMetrics(unittest.TestCase):
         self.assertGreater(bounds.f2_max, 0.0)
 
     def test_wilcoxon_pvalue(self):
-        scores_hcsm = [0.40, 0.42, 0.39, 0.41, 0.43]
+        scores_cas = [0.40, 0.42, 0.39, 0.41, 0.43]
         scores_gls = [0.35, 0.36, 0.34, 0.35, 0.36]
-        p_val = compute_wilcoxon_pvalue(scores_hcsm, scores_gls, alternative="greater")
+        p_val = compute_wilcoxon_pvalue(scores_cas, scores_gls, alternative="greater")
         self.assertLess(p_val, 0.05)
 
 

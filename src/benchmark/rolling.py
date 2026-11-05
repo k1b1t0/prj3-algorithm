@@ -13,7 +13,7 @@ from dataset.teams import get_standard_teams
 from solvers.greedy_cvss import GreedyCVSSSolver
 from solvers.ortools_cpsat import CPSATExactSolver
 from solvers.ortools_routing import ORToolsRoutingSolver
-from solvers.proposed_hcsm.solver import ProposedHCSMSolver
+from solvers.proposed_cas.solver import ProposedCASSolver
 from benchmark.config import (
     PROJECT_ROOT, DEFAULT_ROLLING_SEEDS, DEFAULT_NUM_SPRINTS,
     DEFAULT_TASKS_PER_SPRINT, DEFAULT_SOLVERS
@@ -24,9 +24,9 @@ from benchmark.rolling_agg import aggregate_rolling_scorecard, print_rolling_sco
 
 def _step_solver(s_key_norm, backlog, teams, s, cpsat_to, gls_to):
     t0 = time.perf_counter()
-    if s_key_norm == "hcsm":
+    if s_key_norm in ["cas", "hcsm"]:
         bnds = compute_static_bounds(backlog, teams, current_sprint=s)
-        plan = ProposedHCSMSolver().solve(backlog, teams, current_sprint=s, w=0.5, bounds=bnds)
+        plan = ProposedCASSolver().solve(backlog, teams, current_sprint=s, w=0.5, bounds=bnds)
     elif s_key_norm == "gls":
         bnds = compute_static_bounds(backlog, teams, current_sprint=s)
         plan = ORToolsRoutingSolver(time_limit_sec=gls_to).solve(backlog, teams, current_sprint=s, w=0.5, bounds=bnds)
@@ -74,7 +74,7 @@ def run_benchmark_rolling(
     solver_seed_results: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     all_sprint_records: List[Dict[str, Any]] = []
     teams_template = get_standard_teams(n_teams)
-    solver_names = {"hcsm": "Proposed H-CSM", "gls": "Routing GLS", "greedy": "Greedy-CVSS", "cpsat": "OR-Tools CP-SAT"}
+    solver_names = {"cas": "Proposed CAS", "hcsm": "Proposed CAS", "gls": "Routing GLS", "greedy": "Greedy-CVSS", "cpsat": "OR-Tools CP-SAT"}
 
     for seed_idx, seed in enumerate(seeds):
         print(f"\n=======================================================\n  RUN SEED {seed} ({seed_idx + 1}/{len(seeds)})\n=======================================================")
