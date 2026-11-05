@@ -1,9 +1,4 @@
-# CAS: Cluster-Assign-Sequence Heuristic for Agile SecOps Vulnerability Scheduling
-
-Hệ thống thuật toán heuristic tối ưu hóa điều độ và phân bổ công việc khắc phục lỗ hổng an ninh mạng đa mục tiêu trong chu kỳ Sprint Agile.
-
-Thuật toán khai thác quan hệ tương đương $C_{ij} = 0$ và cấu trúc mã nguồn phân cấp (Repo $\to$ Module $\to$ Skill) nhằm tối ưu hóa đồng thời Lợi ích an ninh ($f_1$) và Chi phí chuyển đổi ngữ cảnh ($f_2$) với thời gian thực thi mili-giây.
-
+# CAS: Cluster-Assign-Sequence 
 ---
 
 ## 1. Mô Hình Toán Học Bài Toán
